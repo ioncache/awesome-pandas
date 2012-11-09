@@ -1,0 +1,19 @@
+{
+  "name": "nko3-awesome-pandas",
+  "version": "0.0.0",
+  "description": "Awesome Pandas",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:nko3/awesome-pandas.git"
+  },
+  "dependencies": {
+  },
+  "engines": {
+    "node": "0.8.x"
+  },
+  "subdomain": "awesome-pandas.nko3"
+}
