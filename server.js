@@ -65,15 +65,20 @@ io.sockets.on('connection', function(socket) {
 
 console.log('disconenct', socket.room, socket.username);
         // remove the username from global usernames list
-        delete rooms[socket.room].usernames[socket.username];
-        // update list of users in chat, client-side
-        io.sockets.emit('updateusers', rooms[socket.room].usernames);
-        // echo globally that this client has left
-        socket.broadcast.to(socket.room).emit('updatechat', 'SERVER', socket.username + ' has disconnected');
+        if (socket.room) {
+            if (rooms[socket.room])
+                delete rooms[socket.room].usernames[socket.username];
 
-        // cache the chat
-        var now = new Date().getTime();
-        rooms[socket.room].chat[now] = {disconnect: {username: socket.username}};
+            // update list of users in chat, client-side
+            io.sockets.emit('updateusers', rooms[socket.room].usernames);
+
+            // echo globally that this client has left
+            socket.broadcast.to(socket.room).emit('updatechat', 'SERVER', socket.username + ' has disconnected');
+
+            // cache the chat
+            var now = new Date().getTime();
+            rooms[socket.room].chat[now] = {disconnect: {username: socket.username}};
+        }
     });
 });
 
