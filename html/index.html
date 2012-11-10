@@ -12,8 +12,9 @@
         <meta name="keywords" content="" />
         <meta name="robots" content="index, nofollow">
         <meta name="viewport" content="width=device-width">
-
-        <link rel="stylesheet" href="css/normalize.css">
+        
+        <link href='http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700' rel='stylesheet' type='text/css'>
+            
         <link rel="stylesheet" type="text/css" href="css/vendor/bootmetro/css/bootstrap.css">
         <link rel="stylesheet" type="text/css" href="css/vendor/bootmetro/css/bootstrap-responsive.css">
         <link rel="stylesheet" type="text/css" href="css/vendor/bootmetro/css/bootmetro.css">
@@ -71,11 +72,19 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
                     <div id="chart_info" class="well" style="position: relative;">
                         Test1
                     </div>
-                    <div id="chart_container" class="span12"></div>
-                    <div id="chat" class="span4">
-                        <div id="chat_container"></div>
-                        <input id="data" style="width:200px;" />
-                        <input type="button" id="datasend" value="send" />
+                    <div id="chart_container" class="row"></div>
+                    <div id="chat" class="row">
+                        <div class="span10">
+                            <div id="chat_container" class="row"></div>
+                            <div class="row">
+                                <input id="message" class="pull-left span9" type="text" placeholder="Type your message..." />
+                                <button id="send_message" class="pull-right btn btn-success" type="button">Send</button>
+                            </div>
+                        </div>
+                        <div class="span2">
+                            <div class="label">Users in Room</div>
+                            <div id="users"></div>
+                        </div>
                     </div>
                     
                 </div>
@@ -217,17 +226,45 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
             });
             // listener, whenever the server emits 'updatechat', this updates the chat body
             socket.on('updatechat', function (username, data) {
-                $('#chat_container').append('<b>'+username + ':</b> ' + data + '<br>');
+                var message_class = "alert-chat-message-" + ($("#chat_container").children().length % 2 ? "even" : "odd");
+                var new_message = $("<div />")
+                    .addClass("alert " + message_class)
+                    .css({
+                        "margin-bottom": "0.65em"
+                    })
+                    .html("<strong>" + username + ":</strong>&nbsp;&nbsp;" + data)
+                    .appendTo("#chat_container");
             });
         
             // listener, whenever the server emits 'updateusers', this updates the username list
             socket.on('updateusers', function(data) {
-                $('#users').empty();
+                $("#users").empty();
                 $.each(data, function(key, value) {
-                    $('#users').append('<div>' + key + '</div>');
+                    var new_message = $("<div />")
+                        .addClass("label label-info")
+                        .css({
+                            "display": "block",
+                            "margin": ".35em 0"
+                        })
+                        .text(key)
+                        .appendTo("#users");
                 });
             });
-    
+
+            $('#send_message').click( function() {
+                var message = $("#messge").val();
+                $("#message").val("");
+                // tell server to execute 'sendchat' and send along one parameter
+                socket.emit("sendchat", message);
+            });
+            
+            // when the client hits ENTER on their keyboard
+            $("#message").keypress(function(e) {
+                if(e.which == 13) {
+                    $(this).blur();
+                        $("#send_message").focus().click();
+                }
+            });
     
             // TODO: add router, Sammy or Backbone
             //router = Sammy(function() {
