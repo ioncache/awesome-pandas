@@ -13,7 +13,8 @@
   "dependencies": {
     "socket.io": "latest",
     "send": "latest",
-    "restler": "latest"
+    "restler": "latest",
+    "gravatar": "latest"
   },
   "engines": {
     "node": "0.8.x"

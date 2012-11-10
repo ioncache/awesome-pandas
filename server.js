@@ -1,10 +1,53 @@
 var http = require('http'),
     static = require('send'),
     socketio = require('socket.io'),
-    rest = require('restler');
+    rest = require('restler'),
+    qs = require('querystring'),
+    gravatar = require('gravatar');
 
 var handler = function(request, response) {
-    static(request, request.url).root('html').pipe(response);
+    console.log(request.url);
+    if (request.url === "/auth/login") {
+        if (request.method === 'POST') {
+            var data = '';
+            request.on('data', function(fragment) {
+                data += fragment;
+            });
+            request.on('end', function() {
+                var post = qs.parse(data);
+
+                rest.postJson('https://verifier.login.persona.org/verify', {
+                    assertion: post.assertion,
+                    audience: 'http://awesome.oosterveld.org:8000'
+                })
+                .on('complete', function(data, res) {
+                    console.log(data);
+
+                    response.writeHead(200, {'Content-Type': 'application/json'});
+                    response.end(JSON.stringify({
+                        username: data.email,
+                        gravatar: gravatar.url(data.email, {size: 16})
+                    }));
+                });
+            });
+        }
+//        rest.post('https://
+
+//        response.writeHead(200, {'Content-Type': 'application/json'});
+//        response.end(JSON.stringify({
+//            a: 'a', 
+//            b: 'b'
+//        }));
+    } else if (request.url === "/auth/logout") {
+        if (request.method === 'POST') {
+            request.on('end', function() {
+                response.writeHead(200);
+                response.end();
+            });
+        }
+    } else {
+        static(request, request.url).root('html').pipe(response);
+    }
 };
 
 var app = http.createServer(handler),
@@ -35,6 +78,7 @@ io.sockets.on('connection', function(socket) {
     });
 
     socket.on('join', function(room) {
+console.log('---------------------------');
         socket.room = room;
         socket.join(room);
 
@@ -42,29 +86,26 @@ io.sockets.on('connection', function(socket) {
     });
 
     // when the client emits 'adduser', this listens and executes
-    socket.on('adduser', function(room, username){
-        socket.join(room);
-
-        socket.emit('snapshot', rooms[room]);
+    socket.on('adduser', function(username){
+console.log('---------------------------');
         // we store the username in the socket session for this client
         socket.username = username;
-        socket.room = room;
 
         // add the client's username to the room list
-        if (!rooms[room])
-            rooms[room] = newRoom();
-        rooms[room].usernames[username] = username;
+        if (!rooms[socket.room])
+            rooms[socket.room] = newRoom();
+        rooms[socket.room].usernames[username] = username;
 
         // echo to client they've connected
         socket.emit('updatechat', 'SERVER', 'you have connected');
         // echo globally (all clients) that a person has connected
-        socket.broadcast.to(room).emit('updatechat', 'SERVER', username + ' has connected');
+        socket.broadcast.to(socket.room).emit('updatechat', 'SERVER', username + ' has connected');
         // update the list of users in chat, client-side
-        io.sockets.in(room).emit('updateusers', rooms[room].usernames);
+        io.sockets.in(socket.room).emit('updateusers', rooms[socket.room].usernames);
 
         // cache the chat
         var now = new Date().getTime();
-        rooms[room].chat[now] = {connect: {username: socket.username}};
+        rooms[socket.room].chat[now] = {connect: {username: socket.username}};
     });
 
     // when the user disconnects.. perform this
@@ -175,7 +216,7 @@ var then = now - (1 * 24 * 60 * 60); // 2 DAYS AGO
 then = Math.floor(then / 10) * 10; // round to nearest 10 seconds
 
 data.candles[0].start = then;
-
+/*
 rest.postJson(host + '/v1/instruments/poll', data)
     .on('complete', function(data, response) {
         console.log(response.rawEncoded);
@@ -185,3 +226,4 @@ rest.postJson(host + '/v1/instruments/poll', data)
 
         poll();
     });
+*/
