@@ -10,22 +10,18 @@ var handler = function(request, response) {
 var app = http.createServer(handler),
     io = socketio.listen(app);
 
-var state = {
-    instruments: {
-        EUR_USD: {
-                candles: {},
-                chat: {}
-            },
-        USD_CAD: {
-                candles: {},
-                chat: {}
-            }
-        }
-};
+var rooms = {};
+
+function newRoom() {
+    return {
+            usernames: {},
+            candles: {},
+            chat: {}
+        };
+}
 
 var usernames = {};
 io.sockets.on('connection', function(socket) {
-    socket.emit('snapshot', state);
 
     // when the client emits 'sendchat', this listens and executes
     socket.on('sendchat', function (data) {
@@ -41,25 +37,26 @@ io.sockets.on('connection', function(socket) {
     socket.on('adduser', function(room, username){
         socket.join(room);
 
+        socket.emit('snapshot', rooms[room]);
         // we store the username in the socket session for this client
         socket.username = username;
         socket.room = room;
 
         // add the client's username to the room list
-        if (!usernames[room])
-            usernames[room] = {};
-        usernames[room][username] = username;
+        if (!rooms[room])
+            rooms[room] = newRoom();
+        rooms[room].usernames[username] = username;
 
         // echo to client they've connected
         socket.emit('updatechat', 'SERVER', 'you have connected');
         // echo globally (all clients) that a person has connected
         socket.broadcast.to(room).emit('updatechat', 'SERVER', username + ' has connected');
         // update the list of users in chat, client-side
-        io.sockets.in(room).emit('updateusers', usernames[room]);
+        io.sockets.in(room).emit('updateusers', rooms[room].usernames);
 
         // cache the chat
         var now = new Date().getTime();
-//        state.chat[now] = {connect: {username: socket.username}};
+        rooms[room].chat[now] = {connect: {username: socket.username}};
     });
 
     // when the user disconnects.. perform this
@@ -68,15 +65,15 @@ io.sockets.on('connection', function(socket) {
 
 console.log('disconenct', socket.room, socket.username);
         // remove the username from global usernames list
-        delete usernames[socket.room][socket.username];
+        delete rooms[socket.room].usernames[socket.username];
         // update list of users in chat, client-side
-        io.sockets.emit('updateusers', usernames[socket.room]);
+        io.sockets.emit('updateusers', rooms[socket.room].usernames);
         // echo globally that this client has left
         socket.broadcast.to(socket.room).emit('updatechat', 'SERVER', socket.username + ' has disconnected');
 
         // cache the chat
         var now = new Date().getTime();
-//        state.chat[now] = {disconnect: {username: socket.username}};
+        rooms[socket.room].chat[now] = {disconnect: {username: socket.username}};
     });
 });
 
@@ -102,28 +99,29 @@ var poll = function() {
         rest.get(host + '/v1/instruments/poll?sessionId=' + sessionId)
             .on('complete', function(data, response) {
                 console.log(data);
-                var c = data.candles;
+                var candles = data.candles;
 
-                if (c) {
-                    for (var i = 0, l1 = c.length; i < l1; i++) {
-                        var next = c[i];
+                if (candles) {
+                    for (var i = 0, l1 = candles.length; i < l1; i++) {
+                        var next = candles[i];
 
                         var instrument = next.instrument,
-                            granularity = next.granularity;
-                        console.log(instrument, granularity);
+                            interval = next.granularity;
+                        console.log(instrument, interval);
 
-                        if (!state.candles[instrument]) {
-                            state.candles[instrument] = {};
-                        }
-                        if (!state.candles[instrument][granularity]) {
-                            state.candles[instrument][granularity] = {};
-                        }
+                        if (!rooms[instrument])
+                            rooms[instrument] = newRoom();
+                        if (!rooms[instrument].candles)
+                            rooms[instrument].candles = {};
+                        if (!rooms[instrument].candles[interval])
+                            rooms[instrument].candles[interval] = {};
                         for (var j = 0, l2 = next.candles.length; j < l2; j++) {
                             var candle = next.candles[j];
-                            state.candles[instrument][granularity][candle.time] = candle;
+                            rooms[instrument].candles[interval][candle.time] = candle;
                         }
                     }
                 }
+                console.log(rooms);
             });
 
 //    setTimeout(poll, 5000);
@@ -136,5 +134,5 @@ rest.postJson(host + '/v1/instruments/poll', data)
 
         sessionId = data.sessionId;
 
-//        poll();
+        poll();
     });
