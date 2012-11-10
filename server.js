@@ -216,7 +216,7 @@ var then = now - (1 * 24 * 60 * 60); // 2 DAYS AGO
 then = Math.floor(then / 10) * 10; // round to nearest 10 seconds
 
 data.candles[0].start = then;
-/*
+
 rest.postJson(host + '/v1/instruments/poll', data)
     .on('complete', function(data, response) {
         console.log(response.rawEncoded);
@@ -226,4 +226,3 @@ rest.postJson(host + '/v1/instruments/poll', data)
 
         poll();
     });
-*/
