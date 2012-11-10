@@ -18,7 +18,8 @@ var handler = function(request, response) {
 
                 rest.postJson('https://verifier.login.persona.org/verify', {
                     assertion: post.assertion,
-                    audience: 'http://awesome.oosterveld.org:8000'
+                    // FIXME: THis should be a configuration varaible
+                    audience: request.headers.host
                 })
                 .on('complete', function(data, res) {
                     console.log(data);
