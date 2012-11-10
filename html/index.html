@@ -108,33 +108,23 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
             });
         
             socket.on('snapshot', function(data) {
-                $.each(data.candles.H1, function(i, e) {
+                console.log(data);
+                $.each(data.candles.S5, function(i, e) {
                     series_data.push([e.time*1000, e['open mid'], e['high mid'], e['low mid'], e['close mid']]);
                 });
                 // create the chart
                 chart = new Highcharts.StockChart({
                    chart : {
-                       renderTo : 'chart_container',
-                        events: {
-                            load: function() {
-                                // set up the updating of the chart each second
-                                var series = this.series[0];
-                                console.log(series);
-                                var time = 1352498400000;
-                                setInterval(function() {
-                                    time += 60*60*1000;
-                                    var open = Math.random()+1;
-                                    var high = Math.random()+1;
-                                    var low = Math.random()+1;
-                                    var close = Math.random()+1;
-                                    series.addPoint([time, open, high, low, close], true, true);
-                                }, 1000);
-                            }
-                        }
+                       renderTo : 'chart_container'
                     },
-                
+
                     rangeSelector : {
                         buttons : [{
+                            type : 'second',
+                            count : 5,
+                            text : '5s'
+                        },
+                        {
                             type : 'minute',
                             count : 1,
                             text : '1m'
@@ -154,9 +144,59 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
                             count : 1,
                             text : 'All'
                         }],
-                        selected : 1,
+                        selected : 0,
                         inputEnabled : false
                     },
+
+                    //rangeSelector : {
+                    //    buttons : [{
+                    //        type : 'second',
+                    //        count : 5,
+                    //        text : '5s'
+                    //    },
+                    //    {
+                    //        type : 'second',
+                    //        count : 30,
+                    //        text : '30s'
+                    //    },
+                    //    {
+                    //        type : 'minute',
+                    //        count : 1,
+                    //        text : '1m'
+                    //    },
+                    //    {
+                    //        type : 'minute',
+                    //        count : 10,
+                    //        text : '10m'
+                    //    },
+                    //    {
+                    //        type : 'hour',
+                    //        count : 1,
+                    //        text : '1h'
+                    //    },
+                    //    {
+                    //        type : 'hour',
+                    //        count : 6,
+                    //        text : '6h'
+                    //    },
+                    //    {
+                    //        type : 'day',
+                    //        count : 1,
+                    //        text : '1d'
+                    //    },
+                    //    {
+                    //        type : 'week',
+                    //        count : 1,
+                    //        text : '1w'
+                    //    },
+                    //    {
+                    //        type : 'all',
+                    //        count : 1,
+                    //        text : 'All'
+                    //    }],
+                    //    selected : 1,
+                    //    inputEnabled : false
+                    //},
                 
                     title : {
                         text : room.replace('_', '/')
@@ -165,20 +205,15 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
                     series : [{
                         type : 'candlestick',
                         name : room.replace('_', '/'),
-                        data : series_data/*,
-                        dataGrouping : {
-                            units : [
-                                ['hour',
-                                [1]
-                            ], [
-                                'hour',
-                                [1, 2, 3, 4, 6]]
-                            ]
-                        }*/
+                        data : series_data
                     }]
                 });
             });
-        
+
+            socket.on('candle', function(data) {
+                console.log(data);
+                chart.series[0].addPoint([data.time*1000, data['open mid'], data['high mid'], data['low mid'], data['close']], true, true);
+            });
             // listener, whenever the server emits 'updatechat', this updates the chat body
             socket.on('updatechat', function (username, data) {
                 $('#chat_container').append('<b>'+username + ':</b> ' + data + '<br>');
