@@ -13,12 +13,14 @@ var data = {
     candles: [
             {
                 instrument: "USD_CAD",
-                granularity: "S5",
-//                start: 1352477550
-                start: 1352498405
+                granularity: "H1",
+                start: 1352490000
+//                start: 1352498405
             }
         ]
     };
+
+console.log(data);
 
 var sessionId;
 
@@ -38,15 +40,7 @@ var poll = function() {
     setTimeout(poll, 5000);
 };
 
-rest.postJson(host + '/v1/instruments/poll', data, {
-        parser: function(data, callback) {
-console.log(data);
-            var y = data.match(/{"(\w+)":"(\d+)"}/);
-            var data = {};
-            data[y[1]] = y[2];
-            callback(null, data);
-        }
-    })
+rest.postJson(host + '/v1/instruments/poll', data)
     .on('complete', function(data, response) {
         console.log(response.rawEncoded);
         console.log(data.sessionId);
