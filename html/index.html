@@ -77,11 +77,11 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
                     <div id="chart_container" class="row"></div>
                     <div id="chat" class="row">
                         <div class="span10">
-                            <div id="chat_container" class="row"></div>
                             <div class="row">
                                 <input id="message" class="pull-left span9" type="text" placeholder="Type your message..." />
                                 <button id="send_message" class="pull-right btn btn-success" type="button">Send</button>
                             </div>
+                            <div id="chat_container" class="row"></div>
                         </div>
                         <div class="span2">
                             <div class="label">Users in Room</div>
@@ -234,7 +234,7 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
                         "margin-bottom": "0.65em"
                     })
                     .html("<strong>" + username + ":</strong>&nbsp;&nbsp;" + data)
-                    .appendTo("#chat_container");
+                    .prependTo("#chat_container");
             });
         
             // listener, whenever the server emits 'updateusers', this updates the username list
