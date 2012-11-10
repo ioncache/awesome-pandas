@@ -100,16 +100,23 @@ io.sockets.on('connection', function(socket) {
             rooms[socket.room] = newRoom();
         rooms[socket.room].usernames[username] = username;
 
+        var now = new Date().getTime();
+        var update = {
+                username: 'SERVER',
+                text: 'you have connected',
+                timestamp: now
+            };
         // echo to client they've connected
-        socket.emit('updatechat', 'SERVER', 'you have connected');
+        socket.emit('updatechat', update);
+
+        update.text = username + ' has connected';
         // echo globally (all clients) that a person has connected
-        socket.broadcast.to(socket.room).emit('updatechat', 'SERVER', username + ' has connected');
+        socket.broadcast.to(socket.room).emit('updatechat', update);
         // update the list of users in chat, client-side
         io.sockets.in(socket.room).emit('updateusers', rooms[socket.room].usernames);
 
         // cache the chat
-        var now = new Date().getTime();
-        rooms[socket.room].chat[now] = {connect: {username: socket.username}};
+        rooms[socket.room].chat[now] = {chat: update};
     });
 
     // when the user disconnects.. perform this
@@ -126,12 +133,18 @@ console.log('disconenct', socket.room, socket.username);
                 // update list of users in chat, client-side
                 io.sockets.emit('updateusers', rooms[socket.room].usernames);
 
+                var now = new Date().getTime();
+                var update = {
+                    username: 'SERVER',
+                    text: socket.username + ' has disconencted',
+                    timestamp: now
+                };
+
                 // echo globally that this client has left
-                socket.broadcast.to(socket.room).emit('updatechat', 'SERVER', socket.username + ' has disconnected');
+                socket.broadcast.to(socket.room).emit('updatechat', update);
 
                 // cache the chat
-                var now = new Date().getTime();
-                rooms[socket.room].chat[now] = {disconnect: {username: socket.username}};
+                rooms[socket.room].chat[now] = {chat: update};
             }
         }
     });
