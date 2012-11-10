@@ -66,49 +66,55 @@ $(document).ready(function() {
     });
 
     socket.on('snapshot', function(data) {
-        console.log(data);
         $.each(data.candles.S5, function(i, e) {
             series_data.push([e.time * 1000, e['open mid'], e['high mid'], e['low mid'], e['close mid']]);
         });
         // create the chart
         chart = new Highcharts.StockChart({
             chart: {
-                renderTo: 'chart_container'
+                renderTo: "chart_container"
             },
 
+            plotOptions: {
+                candlestick: {
+                    color: "#BD362F",
+                    upColor: "#5BB75B"
+                }
+            },
+        
             rangeSelector: {
                 buttons: [{
-                    type: 'minute',
+                    type: "minute",
                     count: 10,
-                    text: '10m'
+                    text: "10m"
                 }, {
-                    type: 'hour',
+                    type: "hour",
                     count: 1,
-                    text: '1h'
+                    text: "1h"
                 }, {
-                    type: 'hour',
+                    type: "hour",
                     count: 6,
-                    text: '6h'
+                    text: "6h"
                 }, {
-                    type: 'day',
+                    type: "day",
                     count: 1,
-                    text: '1d'
+                    text: "1d"
                 }, {
-                    type: 'week',
+                    type: "week",
                     count: 1,
-                    text: '1w'
+                    text: "1w"
                 }, {
-                    type: 'all',
+                    type: "all",
                     count: 1,
-                    text: 'All'
+                    text: "All"
                 }],
                 selected: 1,
                 inputEnabled: false
             },
 
             series: [{
-                type: 'candlestick',
-                name: room.replace('_', '/'),
+                type: "candlestick",
+                name: room.replace("_", "/"),
                 data: series_data
             }]
         });
@@ -120,7 +126,6 @@ $(document).ready(function() {
     });
     // listener, whenever the server emits 'updatechat', this updates the chat body
     socket.on('updatechat', function(data) {
-        console.log(data);
         new_chat_message(data);
     });
 
@@ -137,7 +142,6 @@ $(document).ready(function() {
 
     $('#send_message').click(function() {
         var message = $("#message").val();
-        console.log('message', message);
         $("#message").val("");
         // tell server to execute 'sendchat' and send along one parameter
         socket.emit("sendchat", message);
@@ -178,7 +182,6 @@ function new_chat_message(data) {
     var message_class = "alert-chat-message-" + ($("#chat_container").children().length % 2 ? "even" : "odd");
     var time = new Date(0);
     time.setMilliseconds(data.timestamp);
-    console.log(time);
     $("<div />").addClass("alert " + message_class).css({
         "margin-bottom": "0.65em"
     }).html("<img src=\"" + data.gravatar + "?size=16\" />&nbsp;&nbsp;<strong>[" + time.toUTCString() + "] " + data.username.replace(/^(\w*)@.*$/, "$1") + ":</strong>&nbsp;&nbsp;" + data.text).prependTo("#chat_container");
