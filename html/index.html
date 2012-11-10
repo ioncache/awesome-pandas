@@ -70,7 +70,7 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
             <div class="container">
                 <div id="chart" class="view" style="display: block; position: relative;">
                     <div id="chart_info" class="well" style="position: relative;">
-                        <h1>
+                        <h1 class="align-center">
                             Chat about USD/CAD
                         </h1>
                     </div>
@@ -130,15 +130,11 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
                     },
 
                     rangeSelector : {
-                        buttons : [{
-                            type : 'second',
-                            count : 5,
-                            text : '5s'
-                        },
+                        buttons : [
                         {
                             type : 'minute',
-                            count : 1,
-                            text : '1m'
+                            count : 10,
+                            text : '10m'
                         },
                         {
                             type : 'hour',
@@ -151,68 +147,25 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
                             text : '6h'
                         },
                         {
+                            type : 'day',
+                            count : 1,
+                            text : '1d'
+                        },
+                        {
+                            type : 'week',
+                            count : 1,
+                            text : '1w'
+                        },
+                        {
                             type : 'all',
                             count : 1,
                             text : 'All'
-                        }],
-                        selected : 2,
+                        }
+                        ],
+                        selected : 1,
                         inputEnabled : false
                     },
-
-                    //rangeSelector : {
-                    //    buttons : [{
-                    //        type : 'second',
-                    //        count : 5,
-                    //        text : '5s'
-                    //    },
-                    //    {
-                    //        type : 'second',
-                    //        count : 30,
-                    //        text : '30s'
-                    //    },
-                    //    {
-                    //        type : 'minute',
-                    //        count : 1,
-                    //        text : '1m'
-                    //    },
-                    //    {
-                    //        type : 'minute',
-                    //        count : 10,
-                    //        text : '10m'
-                    //    },
-                    //    {
-                    //        type : 'hour',
-                    //        count : 1,
-                    //        text : '1h'
-                    //    },
-                    //    {
-                    //        type : 'hour',
-                    //        count : 6,
-                    //        text : '6h'
-                    //    },
-                    //    {
-                    //        type : 'day',
-                    //        count : 1,
-                    //        text : '1d'
-                    //    },
-                    //    {
-                    //        type : 'week',
-                    //        count : 1,
-                    //        text : '1w'
-                    //    },
-                    //    {
-                    //        type : 'all',
-                    //        count : 1,
-                    //        text : 'All'
-                    //    }],
-                    //    selected : 1,
-                    //    inputEnabled : false
-                    //},
                 
-                    title : {
-                        text : room.replace('_', '/')
-                    },
-
                     series : [{
                         type : 'candlestick',
                         name : room.replace('_', '/'),
