@@ -38,6 +38,7 @@ var _ratchet=["d3ac21376b0e414d9e4b66ce17a429f4", _ratchetParams];
 f=d.getElementsByTagName("script")[0];s.src="//d2tf6sbdgil6xr.cloudfront.net/js/11/ratchet.js";s.async=!0;
 f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load",i,!1);}else{w.attachEvent("onload",i);}})(window,document);
 </script>
+
         <script src="/socket.io/socket.io.js"></script>
         <script src="js/vendor/modernizr-2.6.2.min.js"></script>
     </head>
@@ -50,7 +51,7 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
         <div class="navbar navbar-fixed-top">
             <div class="navbar-inner">
                 <div class="container">
-                    <a class="brand" href="#/"><img class="logo" src="img/oanda-hor-rgb-inv-OL.png" /><span class="title_text">Chart Chat</span></a>
+                    <a class="brand" href="#/"><span class="title_text">Chart Chat</span></a>
                     <div class="nav-collapse collapse">
                         <ul class="nav">
                             <li id="home_page" class="menu_item active"><a href="#/">Charts</a></li>
@@ -70,9 +71,8 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
                     <div id="chart_info" class="well" style="position: relative;">
                         Test1
                     </div>
-                    <div class="row">
-                        Test2
-                    </div>
+                    <div id="chart_container" class="span12"></div>
+                    <div id="chat_container" class="span14"></div>
                 </div>
             </div>
         </div>
@@ -90,17 +90,82 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
         <script src="js/main.js"></script>
 
         <script>
+        var room = 'USD_CAD';
         var socket = io.connect(location.origin);
-            socket.on('news', function (data) {
-                console.log(data);
-            });
-            socket.on('snapshot', function (data) {
-                console.log(data);
-            });
-
         var session_id;
-
-        $(document).ready(function () {
+        var series_data = [];
+        $(document).ready(function() {
+    
+            // on connection to server, ask for user's name with an anonymous callback
+            socket.on('connect', function(){
+                // call the server-side function 'adduser' and send one parameter (value of prompt)
+                socket.emit('adduser', room, prompt("What's your name?"));
+            });
+        
+            socket.on('snapshot', function(data) {
+                console.log(data);
+                $.each(data.candles.H1, function(i, e) {
+                    series_data.push([e.time*1000, e['open mid'], e['high mid'], e['low mid'], e['close mid']]);
+                });
+                console.log(series_data);
+                // create the chart
+                chart = new Highcharts.StockChart({
+                   chart : {
+                       renderTo : 'chart_container'/*,
+                        events: {
+                            load: function() {
+                
+                                // set up the updating of the chart each second
+                                var series = this.series[0];
+                                setInterval(function() {
+                                    var x = (new Date()).getTime(), // current time
+                                        y = Math.random();
+                                    series.addPoint([x, y], true, true);
+                                }, 1000);
+                            }
+                        }*/
+                   },
+                
+                   rangeSelector : {
+                       selected : 1
+                   },
+                
+                   title : {
+                       text : room.replace('_', '/')
+                   },
+                
+                   series : [{
+                       type : 'candlestick',
+                       name : room.replace('_', '/'),
+                       data : series_data,
+                       dataGrouping : {
+                           units : [
+                               ['hour', // unit name
+                               [1] // allowed multiples
+                           ], [
+                               'hour',
+                               [1, 2, 3, 4, 6]]
+                           ]
+                       }
+                   }]
+                });
+            });
+        
+            // listener, whenever the server emits 'updatechat', this updates the chat body
+            socket.on('updatechat', function (username, data) {
+                $('#chat_container').append('<b>'+username + ':</b> ' + data + '<br>');
+            });
+        
+            // listener, whenever the server emits 'updateusers', this updates the username list
+            socket.on('updateusers', function(data) {
+                $('#users').empty();
+                $.each(data, function(key, value) {
+                    $('#users').append('<div>' + key + '</div>');
+                });
+            });
+    
+    
+            // TODO: add router, Sammy or Backbone
             //router = Sammy(function() {
             //    // profile pages
             //    this.get(/\#\/profile\/(.*)/, function() {
@@ -121,25 +186,6 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
             //
             //});
             //router.run(); 
-/*
-            $.ajax({
-                url: "http://oanda-cs-dev:62300/v1/instruments/poll",
-                data: { "candles": [ { "instrument": "EUR_USD", "granularity": "S5", "start": 1352486189 } ] },
-                type: 'POST',
-                success: function(data) {
-                    session_id = data.sessionId;
-                }
-            });
-
-            $.ajax({
-                url: "http://oanda-cs-dev:62300/v1/instruments/",
-                type: 'GET',
-                success: function(data) {
-                    console.log(data);
-                }
-            });
-*/
-            var chart1 = new Highcharts.Chart();
             
         });
 
