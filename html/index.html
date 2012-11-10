@@ -6,7 +6,7 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <title></title>
+        <title>Forex Chart Chat</title>
         <meta name="author" content="Awesome Pandas"/>
         <meta name="description" content="">
         <meta name="keywords" content="" />
@@ -72,7 +72,12 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
                         Test1
                     </div>
                     <div id="chart_container" class="span12"></div>
-                    <div id="chat_container" class="span14"></div>
+                    <div id="chat" class="span4">
+                        <div id="chat_container"></div>
+                        <input id="data" style="width:200px;" />
+                        <input type="button" id="datasend" value="send" />
+                    </div>
+                    
                 </div>
             </div>
         </div>
@@ -103,51 +108,74 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
             });
         
             socket.on('snapshot', function(data) {
-                console.log(data);
                 $.each(data.candles.H1, function(i, e) {
                     series_data.push([e.time*1000, e['open mid'], e['high mid'], e['low mid'], e['close mid']]);
                 });
-                console.log(series_data);
                 // create the chart
                 chart = new Highcharts.StockChart({
                    chart : {
-                       renderTo : 'chart_container'/*,
+                       renderTo : 'chart_container',
                         events: {
                             load: function() {
-                
                                 // set up the updating of the chart each second
                                 var series = this.series[0];
+                                console.log(series);
+                                var time = 1352498400000;
                                 setInterval(function() {
-                                    var x = (new Date()).getTime(), // current time
-                                        y = Math.random();
-                                    series.addPoint([x, y], true, true);
+                                    time += 60*60*1000;
+                                    var open = Math.random()+1;
+                                    var high = Math.random()+1;
+                                    var low = Math.random()+1;
+                                    var close = Math.random()+1;
+                                    series.addPoint([time, open, high, low, close], true, true);
                                 }, 1000);
                             }
+                        }
+                    },
+                
+                    rangeSelector : {
+                        buttons : [{
+                            type : 'minute',
+                            count : 1,
+                            text : '1m'
+                        },
+                        {
+                            type : 'hour',
+                            count : 1,
+                            text : '1h'
+                        },
+                        {
+                            type : 'hour',
+                            count : 6,
+                            text : '6h'
+                        },
+                        {
+                            type : 'all',
+                            count : 1,
+                            text : 'All'
+                        }],
+                        selected : 1,
+                        inputEnabled : false
+                    },
+                
+                    title : {
+                        text : room.replace('_', '/')
+                    },
+
+                    series : [{
+                        type : 'candlestick',
+                        name : room.replace('_', '/'),
+                        data : series_data/*,
+                        dataGrouping : {
+                            units : [
+                                ['hour',
+                                [1]
+                            ], [
+                                'hour',
+                                [1, 2, 3, 4, 6]]
+                            ]
                         }*/
-                   },
-                
-                   rangeSelector : {
-                       selected : 1
-                   },
-                
-                   title : {
-                       text : room.replace('_', '/')
-                   },
-                
-                   series : [{
-                       type : 'candlestick',
-                       name : room.replace('_', '/'),
-                       data : series_data,
-                       dataGrouping : {
-                           units : [
-                               ['hour', // unit name
-                               [1] // allowed multiples
-                           ], [
-                               'hour',
-                               [1, 2, 3, 4, 6]]
-                           ]
-                       }
-                   }]
+                    }]
                 });
             });
         
