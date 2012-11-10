@@ -69,13 +69,17 @@ io.sockets.on('connection', function(socket) {
 
     // when the client emits 'sendchat', this listens and executes
     socket.on('sendchat', function (data) {
-        var now = new Date().getTime();
+        var now = new Date().getTime(),
+            update = {
+                username: socket.username,
+                text: data,
+                timestamp: now
+            };
         // we tell the client to execute 'updatechat' with 2 parameters
-        io.sockets.in(socket.room).emit('updatechat', socket.username, data);
+        io.sockets.in(socket.room).emit('updatechat', update);
 
         // cache the chat
-        state.chat[now] = {chat: {username: socket.username, text: data,
-            timestamp: now}};
+        rooms[socket.room].chat[now] = {chat: update};
     });
 
     socket.on('join', function(room) {
