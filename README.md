@@ -65,3 +65,6 @@ freenode, email us at <all@nodeknockout.com>, or tweet
 [3]: https://github.com/nko3/awesome-pandas
 [4]: http://handbook.jit.su
 [5]: http://blog.nodeknockout.com/post/35279199042/introduction-to-jitsu-deployment
+
+## Resources used:
+Boot Metro: http://aozora.github.com/bootmetro/

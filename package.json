@@ -1,6 +1,6 @@
 {
   "name": "nko3-awesome-pandas",
-  "version": "0.0.0",
+  "version": "0.0.0-2",
   "description": "Awesome Pandas",
   "main": "server.js",
   "scripts": {
@@ -11,6 +11,8 @@
     "url": "git@github.com:nko3/awesome-pandas.git"
   },
   "dependencies": {
+    "socket.io": "latest",
+    "send": "latest"
   },
   "engines": {
     "node": "0.8.x"
