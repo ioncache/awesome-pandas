@@ -33,8 +33,7 @@ $(document).ready(function() {
                     $("#message, #send_message").each(function(i, e) {
                         $(e).removeAttr("disabled");
                     });
-                    socket.emit("adduser", username.replace(/^(\w*)@.*$/, "$1") );
-                    
+                    socket.emit("adduser", username);
                 },
                 error: function(xhr, status, error) {
                     console.log(xhr, status, error);
@@ -46,9 +45,10 @@ $(document).ready(function() {
                 type: "POST",
                 url: "/auth/logout",
                 success: function(response, status, xhr) {
-                    $("#signin").fadeOut(200, function() {
-                        $("#signout").fadeIn(200);
+                    $("#signout").fadeOut(200, function() {
+                        $("#signin").fadeIn(200);
                     });
+
                     $("#message, #send_message").each(function(i, e) {
                         $(e).attr("disabled", true);
                     });
@@ -131,7 +131,7 @@ $(document).ready(function() {
             var new_message = $("<div />").addClass("label label-info").css({
                 "display": "block",
                 "margin": ".35em 0"
-            }).html(key).appendTo("#users");
+            }).html(key.replace(/^(\w*)@.*$/, "$1")).appendTo("#users");
         });
     });
 
