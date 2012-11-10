@@ -74,7 +74,8 @@ io.sockets.on('connection', function(socket) {
             update = {
                 username: socket.username,
                 text: data,
-                timestamp: now
+                timestamp: now,
+                gravatar: socket.gravatar
             };
         // we tell the client to execute 'updatechat' with 2 parameters
         io.sockets.in(socket.room).emit('updatechat', update);
@@ -93,6 +94,7 @@ io.sockets.on('connection', function(socket) {
     // when the client emits 'adduser', this listens and executes
     socket.on('adduser', function(username){
         // we store the username in the socket session for this client
+        socket.gravatar = gravatar.url(username);
         socket.username = username;
 
         // add the client's username to the room list
@@ -104,7 +106,8 @@ io.sockets.on('connection', function(socket) {
         var update = {
                 username: 'SERVER',
                 text: 'you have connected',
-                timestamp: now
+                timestamp: now,
+                gravatar: socket.gravatar
             };
         // echo to client they've connected
         socket.emit('updatechat', update);
@@ -137,7 +140,8 @@ console.log('disconenct', socket.room, socket.username);
                 var update = {
                     username: 'SERVER',
                     text: socket.username + ' has disconencted',
-                    timestamp: now
+                    timestamp: now,
+                    gravatar: socket.gravatar
                 };
 
                 // echo globally that this client has left
@@ -176,6 +180,7 @@ function setupCandles() {
     if (!rooms['USD_CAD'].candles['S5'])
         rooms['USD_CAD'].candles['S5'] = {};
 
+console.log('setup', keys.length);
     for (last = 0; last < 200 && last < keys.length; last++) {
         var index = keys[last];
         var candle = cache['USD_CAD'].candles['S5'][index];
@@ -184,6 +189,7 @@ function setupCandles() {
 };
 
 function trickle() {
+console.log('trickle', last, keys.length);
     if (last < keys.length) {
         var index = keys[last++];
 
@@ -229,7 +235,7 @@ var poll = function() {
 };
 
 var now = Math.floor(new Date().getTime() / 1000);
-var then = now - (1 * 24 * 60 * 60); // 2 DAYS AGO
+var then = now - (2 * 24 * 60 * 60); // 2 DAYS AGO
 then = Math.floor(then / 10) * 10; // round to nearest 10 seconds
 
 data.candles[0].start = then;
