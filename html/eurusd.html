@@ -10,12 +10,13 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
 </head>
 <script>
+    var room = 'EUR_USD';
     var socket = io.connect(location.origin);
 
     // on connection to server, ask for user's name with an anonymous callback
     socket.on('connect', function(){
         // call the server-side function 'adduser' and send one parameter (value of prompt)
-        socket.emit('adduser', prompt("What's your name?"));
+        socket.emit('adduser', room, prompt("What's your name?"));
     });
 
     socket.on('snapshot', function(data) {
