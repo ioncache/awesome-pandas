@@ -211,8 +211,9 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
             });
 
             socket.on('candle', function(data) {
-                console.log(data);
-                chart.series[0].addPoint([data.time*1000, data['open mid'], data['high mid'], data['low mid'], data['close']], true, true);
+                var new_point = [ data.time*1000, data['open mid'], data['high mid'], data['low mid'], data['close mid'] ];
+                console.log(new_point);
+                chart.series[0].addPoint(new_point, true, true);
             });
             // listener, whenever the server emits 'updatechat', this updates the chat body
             socket.on('updatechat', function (username, data) {
