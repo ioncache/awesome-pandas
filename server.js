@@ -11,6 +11,7 @@ var app = http.createServer(handler),
     io = socketio.listen(app);
 
 var rooms = {};
+var cache = {};
 
 function newRoom() {
     return {
@@ -31,6 +32,13 @@ io.sockets.on('connection', function(socket) {
         // cache the chat
         var now = new Date().getTime();
 //        state.chat[now] = {chat: {username: socket.username, text: data}};
+    });
+
+    socket.on('join', function(room) {
+        socket.room = room;
+        socket.join(room);
+
+        socket.emit('snapshot', rooms[room]);
     });
 
     // when the client emits 'adduser', this listens and executes
@@ -61,23 +69,25 @@ io.sockets.on('connection', function(socket) {
 
     // when the user disconnects.. perform this
     socket.on('disconnect', function(){
-        socket.leave(socket.room);
 
 console.log('disconenct', socket.room, socket.username);
         // remove the username from global usernames list
         if (socket.room) {
-            if (rooms[socket.room])
+            socket.leave(socket.room);
+
+            if (socket.username) {
                 delete rooms[socket.room].usernames[socket.username];
 
-            // update list of users in chat, client-side
-            io.sockets.emit('updateusers', rooms[socket.room].usernames);
+                // update list of users in chat, client-side
+                io.sockets.emit('updateusers', rooms[socket.room].usernames);
 
-            // echo globally that this client has left
-            socket.broadcast.to(socket.room).emit('updatechat', 'SERVER', socket.username + ' has disconnected');
+                // echo globally that this client has left
+                socket.broadcast.to(socket.room).emit('updatechat', 'SERVER', socket.username + ' has disconnected');
 
-            // cache the chat
-            var now = new Date().getTime();
-            rooms[socket.room].chat[now] = {disconnect: {username: socket.username}};
+                // cache the chat
+                var now = new Date().getTime();
+                rooms[socket.room].chat[now] = {disconnect: {username: socket.username}};
+            }
         }
     });
 });
@@ -91,46 +101,80 @@ var data = {
     candles: [
             {
                 instrument: "USD_CAD",
-                granularity: "H1",
-//                start: 1352477550
+                granularity: "S5",
 //                start: 1352498405
-                start: 1352490000
+                start: 1352477550
             }
         ]
     };
 
+var last;
+var keys;
+function setupCandles() {
+    keys = Object.keys(cache['USD_CAD'].candles['S5']);
+
+    if (!rooms['USD_CAD'])
+        rooms['USD_CAD'] = newRoom();
+    if (!rooms['USD_CAD'].candles['S5'])
+        rooms['USD_CAD'].candles['S5'] = {};
+
+    for (last = 0; last < 200 && last < keys.length; last++) {
+        var index = keys[last];
+        var candle = cache['USD_CAD'].candles['S5'][index];
+        rooms['USD_CAD'].candles['S5'][index] = candle;
+    }
+};
+
+function trickle() {
+    if (last < keys.length) {
+        var index = keys[last++];
+
+        var index = keys[last];
+        var candle = cache['USD_CAD'].candles['S5'][index];
+        rooms['USD_CAD'].candles['S5'][index] = candle;
+
+        io.sockets.in('USD_CAD').emit('candle', candle);
+
+        setTimeout(trickle, 5000);
+    }
+};
 
 var poll = function() {
-        rest.get(host + '/v1/instruments/poll?sessionId=' + sessionId)
-            .on('complete', function(data, response) {
-                console.log(data);
-                var candles = data.candles;
+    rest.get(host + '/v1/instruments/poll?sessionId=' + sessionId)
+        .on('complete', function(data, response) {
+            console.log(data);
+            var candles = data.candles;
 
-                if (candles) {
-                    for (var i = 0, l1 = candles.length; i < l1; i++) {
-                        var next = candles[i];
+            if (candles) {
+                for (var i = 0, l1 = candles.length; i < l1; i++) {
+                    var next = candles[i];
 
-                        var instrument = next.instrument,
-                            interval = next.granularity;
-                        console.log(instrument, interval);
+                    var instrument = next.instrument,
+                        interval = next.granularity;
 
-                        if (!rooms[instrument])
-                            rooms[instrument] = newRoom();
-                        if (!rooms[instrument].candles)
-                            rooms[instrument].candles = {};
-                        if (!rooms[instrument].candles[interval])
-                            rooms[instrument].candles[interval] = {};
-                        for (var j = 0, l2 = next.candles.length; j < l2; j++) {
-                            var candle = next.candles[j];
-                            rooms[instrument].candles[interval][candle.time] = candle;
-                        }
+                    if (!cache[instrument])
+                        cache[instrument] = newRoom();
+                    if (!cache[instrument].candles[interval])
+                        cache[instrument].candles[interval] = {};
+                    for (var j = 0, l2 = next.candles.length; j < l2; j++) {
+                        var candle = next.candles[j];
+                        cache[instrument].candles[interval][candle.time] = candle;
                     }
                 }
-                console.log(rooms);
-            });
+            }
+//            console.log(cache);
 
-//    setTimeout(poll, 5000);
+            setupCandles();
+            trickle();
+//            setTimeout(poll, 5000);
+        });
 };
+
+var now = Math.floor(new Date().getTime() / 1000);
+var then = now - (1 * 24 * 60 * 60); // 2 DAYS AGO
+then = Math.floor(then / 10) * 10; // round to nearest 10 seconds
+
+data.candles[0].start = then;
 
 rest.postJson(host + '/v1/instruments/poll', data)
     .on('complete', function(data, response) {
