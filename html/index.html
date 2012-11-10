@@ -112,8 +112,9 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
     
             // on connection to server, ask for user's name with an anonymous callback
             socket.on('connect', function(){
+                socket.emit('join', room);
                 // call the server-side function 'adduser' and send one parameter (value of prompt)
-                socket.emit('adduser', room, prompt("What's your name?"));
+//                socket.emit('adduser', room, prompt("What's your name?"));
             });
         
             socket.on('snapshot', function(data) {
