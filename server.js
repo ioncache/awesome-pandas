@@ -11,29 +11,55 @@ var app = http.createServer(handler),
     io = socketio.listen(app);
 
 var state = {
-    hello: 'world',
     candles: {},
     chat: {}
 };
 
-var nextClient = 1;
-var clients = {};
+var usernames = {};
 io.sockets.on('connection', function(socket) {
     socket.emit('snapshot', state);
-/*
-    clients[nextClient] = socket;
-    socket.set('clientid', nextClient++, function() {
-        socket.emit('snapshot', {'hello': 'world'});
+
+    // when the client emits 'sendchat', this listens and executes
+    socket.on('sendchat', function (data) {
+        // we tell the client to execute 'updatechat' with 2 parameters
+        io.sockets.emit('updatechat', socket.username, data);
+
+        // cache the chat
+        var now = new Date().getTime();
+        state.chat[now] = {chat: {username: socket.username, text: data}};
     });
 
-    socket.on('disconnet', function() {
-        socket.get('clientid', function(err, clientId) {
-            if (!err) {
-                delete clients[clientId];
-            }
-        });
+    // when the client emits 'adduser', this listens and executes
+    socket.on('adduser', function(username){
+        // we store the username in the socket session for this client
+        socket.username = username;
+        // add the client's username to the global list
+        usernames[username] = username;
+        // echo to client they've connected
+        socket.emit('updatechat', 'SERVER', 'you have connected');
+        // echo globally (all clients) that a person has connected
+        socket.broadcast.emit('updatechat', 'SERVER', username + ' has connected');
+        // update the list of users in chat, client-side
+        io.sockets.emit('updateusers', usernames);
+
+        // cache the chat
+        var now = new Date().getTime();
+        state.chat[now] = {connect: {username: socket.username}};
     });
-*/
+
+    // when the user disconnects.. perform this
+    socket.on('disconnect', function(){
+        // remove the username from global usernames list
+        delete usernames[socket.username];
+        // update list of users in chat, client-side
+        io.sockets.emit('updateusers', usernames);
+        // echo globally that this client has left
+        socket.broadcast.emit('updatechat', 'SERVER', socket.username + ' has disconnected');
+
+        // cache the chat
+        var now = new Date().getTime();
+        state.chat[now] = {disconnect: {username: socket.username}};
+    });
 });
 
 app.listen(8000);
