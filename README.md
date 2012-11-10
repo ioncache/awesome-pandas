@@ -68,3 +68,4 @@ freenode, email us at <all@nodeknockout.com>, or tweet
 
 ## Resources used:
 Boot Metro: http://aozora.github.com/bootmetro/
+HTML5 Boilerplate: 
