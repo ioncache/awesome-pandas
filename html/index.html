@@ -70,7 +70,9 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
             <div class="container">
                 <div id="chart" class="view" style="display: block; position: relative;">
                     <div id="chart_info" class="well" style="position: relative;">
-                        Test1
+                        <h1>
+                            Chat about USD/CAD
+                        </h1>
                     </div>
                     <div id="chart_container" class="row"></div>
                     <div id="chat" class="row">
@@ -117,7 +119,6 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
             });
         
             socket.on('snapshot', function(data) {
-                console.log(data);
                 $.each(data.candles.S5, function(i, e) {
                     series_data.push([e.time*1000, e['open mid'], e['high mid'], e['low mid'], e['close mid']]);
                 });
@@ -221,7 +222,6 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
 
             socket.on('candle', function(data) {
                 var new_point = [ data.time*1000, data['open mid'], data['high mid'], data['low mid'], data['close mid'] ];
-                console.log(new_point);
                 chart.series[0].addPoint(new_point, true, true);
             });
             // listener, whenever the server emits 'updatechat', this updates the chat body
