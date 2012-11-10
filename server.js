@@ -69,16 +69,16 @@ io.sockets.on('connection', function(socket) {
 
     // when the client emits 'sendchat', this listens and executes
     socket.on('sendchat', function (data) {
+        var now = new Date().getTime();
         // we tell the client to execute 'updatechat' with 2 parameters
         io.sockets.in(socket.room).emit('updatechat', socket.username, data);
 
         // cache the chat
-        var now = new Date().getTime();
-//        state.chat[now] = {chat: {username: socket.username, text: data}};
+        state.chat[now] = {chat: {username: socket.username, text: data,
+            timestamp: now}};
     });
 
     socket.on('join', function(room) {
-console.log('---------------------------');
         socket.room = room;
         socket.join(room);
 
@@ -87,7 +87,6 @@ console.log('---------------------------');
 
     // when the client emits 'adduser', this listens and executes
     socket.on('adduser', function(username){
-console.log('---------------------------');
         // we store the username in the socket session for this client
         socket.username = username;
 
