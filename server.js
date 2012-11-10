@@ -1,7 +1,19 @@
-var http = require('http');
-http.createServer(function (req, res) {
-  res.writeHead(200, {'Content-Type': 'text/plain'});
-  res.end('Hello World\n');
-}).listen(8000);
+var http = require('http'),
+    static = require('send'),
+    socketio = require('socket.io');
 
-console.log('Server running at http://0.0.0.0:8000/');
+var handler = function(request, response) {
+    static(request, request.url).root('html').pipe(response);
+};
+
+var app = http.createServer(handler),
+    io = socketio.listen(app);
+
+io.sockets.on('connection', function(socket) {
+    socket.emit('news', {hello: 'world'});
+    socket.on('my other event', function(data) {
+        console.log(data);
+    });
+});
+
+app.listen(8000);
