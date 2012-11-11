@@ -2,33 +2,10 @@ var room = 'USD_CAD';
 var socket = io.connect(location.origin);
 var session_id;
 var series_data = [];
-var granularities = [
-    "D",
-    "H1",
-    "H12",
-    "H2",
-    "H3",
-    "H4",
-    "H6",
-    "H8",
-    "M",
-    "M1",
-    "M10",
-    "M15",
-    "M2",
-    "M3",
-    "M30",
-    "M4",
-    "M5",
-    "S10",
-    "S15",
-    "S30",
-    "S5",
-    "W"
-];
+var granularities = ["D", "H1", "H12", "H2", "H3", "H4", "H6", "H8", "M", "M1", "M10", "M15", "M2", "M3", "M30", "M4", "M5", "S10", "S15", "S30", "S5", "W"];
 
 $(document).ready(function() {
-    
+
     // Click Events
     $("#signin").click(function(e) {
         navigator.id.request();
@@ -58,18 +35,20 @@ $(document).ready(function() {
             $("#send_message").focus().click();
         }
     });
-    
+
     // enable some button functionality
     $("#prediction_buttons").on("click", "button", function() {
         var show = $(this).hasClass("active") ? 0 : 1;
         $("#prediction_buttons button").removeClass("active");
-        if ( show ) {
+        if (show) {
             $(this).addClass("active");
         }
     });
 
     // enable tooltips
-    $(".tool_tip").tooltip({ placement: "bottom" });
+    $(".tool_tip").tooltip({
+        placement: "bottom"
+    });
 
     // Persona Auth setup
     navigator.id.watch({
@@ -119,19 +98,27 @@ $(document).ready(function() {
     });
 
     // socket.io methods
-    
+
     // on connection to server, ask for user's name with an anonymous callback
     socket.on('connect', function() {
         socket.emit('join', room);
     });
 
+    // gets an initial snapshot of the chat and some historical data for the currency pair
+    // sets up the chart with data feed and messages
     socket.on('snapshot', function(data) {
         var messages = [];
-        chat = data.chat;
-        for (var key in chat ) {
-            messages.push([key, { timestamp: key, username: chat[key].username, text: chat[key].text, gravatar: chat[key].gravatar }]);
+        var chat = data.chat;
+        for (var key in chat) {
+            messages.push([key,
+            {
+                timestamp: key,
+                username: chat[key].username,
+                text: chat[key].text,
+                gravatar: chat[key].gravatar
+            }]);
         }
-        messages.sort(function(a,b) {
+        messages.sort(function(a, b) {
             a = a[0];
             b = b[0];
             return a < b ? -1 : (a > b ? 1 : 0);
@@ -154,7 +141,7 @@ $(document).ready(function() {
                     upColor: "#5BB75B"
                 }
             },
-        
+
             rangeSelector: {
                 buttons: [{
                     type: "minute",
@@ -193,10 +180,12 @@ $(document).ready(function() {
         });
     });
 
+    // new curnecy candles are added to the chart
     socket.on('candle', function(data) {
         var new_point = [data.time * 1000, data['open mid'], data['high mid'], data['low mid'], data['close mid']];
         chart.series[0].addPoint(new_point, true, true);
     });
+
     // listener, whenever the server emits 'updatechat', this updates the chat body
     socket.on('updatechat', function(data) {
         new_chat_message(data);
@@ -241,6 +230,9 @@ function new_chat_message(data) {
     var message_class = "alert-chat-message-" + ($("#chat_container").children().length % 2 ? "even" : "odd");
     var time = new Date(0);
     time.setMilliseconds(data.timestamp);
+    if (typeof(data.username) == "undefined") {
+        data.username = "unknown";
+    }
     $("<div />").addClass("alert " + message_class).css({
         "margin-bottom": "0.65em"
     }).html("<img src=\"" + data.gravatar + "?size=16\" />&nbsp;&nbsp;<strong>[" + time.toUTCString() + "] " + data.username.replace(/^(\w*)@.*$/, "$1") + ":</strong>&nbsp;&nbsp;" + data.text).prependTo("#chat_container");
