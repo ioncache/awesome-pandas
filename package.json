@@ -1,6 +1,6 @@
 {
   "name": "nko3-awesome-pandas",
-  "version": "0.0.0-5",
+  "version": "0.0.0-6",
   "description": "Awesome Pandas",
   "main": "server.js",
   "scripts": {
