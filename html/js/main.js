@@ -5,7 +5,7 @@ var room;
 var socket = io.connect(location.origin);
 var session_id;
 var granularities = ["D", "H1", "H12", "H2", "H3", "H4", "H6", "H8", "M", "M1", "M10", "M15", "M2", "M3", "M30", "M4", "M5", "S10", "S15", "S30", "S5", "W"];
-var currency_pairs = [ "EUR_USD", "USD_CAD" ];
+var currency_pairs = [ "EUR_USD", "USD_CAD", "USD_JPY", "USD_CHF", "EUR_AUD", "EUR_GBP" ];
 
 $(document).ready(function() {
 /*

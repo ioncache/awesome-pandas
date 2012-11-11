@@ -284,7 +284,7 @@ function poll() {
         });
 }
 
-var instruments = ["USD_CAD", "EUR_USD"];
+var instruments = ["USD_CAD", "EUR_USD", "USD_JPY", "USD_CHF", "EUR_AUD", "EUR_GBP"];
 
 function fetchCandles(instrument, callback) {
     rest.get(host + "/v1/instruments/" + instrument +
