@@ -137,6 +137,24 @@ io.sockets.on('connection', function(socket) {
         socket.emit('snapshot', rooms[room]);
     });
 
+    socket.on('removeuser', function(data) {
+        if (socket.room && socket.username) {
+            var now = new Date().getTime();
+            var update = {
+                    username: 'SERVER',
+                    text: 'you have disconnected',
+                    timestamp: now,
+                    gravatar: socket.gravatar
+                };
+            // echo to client they've connected
+            socket.emit('updatechat', update);
+
+            if (rooms[socket.room].usernames[socket.username]) {
+                removeUser(socket.room, socket.username);
+            }
+        }
+    });
+
     // when the client emits 'adduser', this listens and executes
     socket.on('adduser', function(username){
         if (socket.room) {
@@ -172,6 +190,28 @@ io.sockets.on('connection', function(socket) {
         }
     });
 
+    function removeUser(room, username) {
+        delete rooms[socket.room].usernames[socket.username];
+
+        // update list of users in chat, client-side
+        io.sockets.emit('updateusers', rooms[socket.room].usernames);
+
+        var now = new Date().getTime();
+        var update = {
+            username: 'SERVER',
+            text: socket.username + ' has disconencted',
+            timestamp: now,
+            gravatar: socket.gravatar
+        };
+
+        // echo globally that this client has left
+        socket.broadcast.to(socket.room).emit('updatechat', update);
+
+        // cache the chat
+        rooms[socket.room].chat[now] = {chat: update};
+        updateDatabase(socket.room, update);
+    }
+
     // when the user disconnects.. perform this
     socket.on('disconnect', function(){
 
@@ -179,26 +219,9 @@ io.sockets.on('connection', function(socket) {
         if (socket.room) {
             socket.leave(socket.room);
 
-            if (socket.username) {
-                delete rooms[socket.room].usernames[socket.username];
-
-                // update list of users in chat, client-side
-                io.sockets.emit('updateusers', rooms[socket.room].usernames);
-
-                var now = new Date().getTime();
-                var update = {
-                    username: 'SERVER',
-                    text: socket.username + ' has disconencted',
-                    timestamp: now,
-                    gravatar: socket.gravatar
-                };
-
-                // echo globally that this client has left
-                socket.broadcast.to(socket.room).emit('updatechat', update);
-
-                // cache the chat
-                rooms[socket.room].chat[now] = {chat: update};
-                updateDatabase(socket.room, update);
+            if (socket.username &&
+                    rooms[socket.room].usernames[socket.username]) {
+                removeUser(socket.room, socket.username);
             }
         }
     });
