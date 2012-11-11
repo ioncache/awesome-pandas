@@ -103,6 +103,7 @@ $(document).ready(function() {
                     $("#message, #send_message").each(function(i, e) {
                         $(e).attr("disabled", true);
                     });
+                    socket.emit("removeuser", {});
                 },
                 error: function(xhr, status, error) {
                     console.log(xhr, status, error);
@@ -241,6 +242,9 @@ $(document).ready(function() {
 
 // adds a new message to the chat area
 function new_chat_message(data) {
+    if (!data.username || !data.timestamp || !data.gravatar)
+        return;
+
     var message_class = "alert-chat-message-" + ($("#chat_container").children().length % 2 ? "even" : "odd");
     var time = new Date(0);
     time.setMilliseconds(data.timestamp);
