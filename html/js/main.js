@@ -13,7 +13,7 @@ $(document).ready(function() {
         var new_pair = $("<li />");
         $("<a />")
             .attr("tabindex", "-1")
-            .attr("href", "#/" +  currency_pairs[i])
+            .attr("href", "#/charts/" +  currency_pairs[i])
             .text(currency_pairs[i].replace("_", "/"))
         .appendTo(new_pair);
         
@@ -125,6 +125,7 @@ $(document).ready(function() {
         var chat = data.chat;
         for (var key in chat) {
             messages.push([key,
+            .9991,
             {
                 timestamp: key,
                 username: chat[key].username,
@@ -138,7 +139,7 @@ $(document).ready(function() {
             return a < b ? -1 : (a > b ? 1 : 0);
         });
         $.each(messages, function(i, e) {
-            new_chat_message(e[1]);
+            new_chat_message(e[2]);
         });
         $.each(data.candles.S5, function(i, e) {
             series_data.push([e.time * 1000, e['open mid'], e['high mid'], e['low mid'], e['close mid']]);
@@ -187,9 +188,22 @@ $(document).ready(function() {
             },
 
             series: [{
-                type: "candlestick",
                 name: room.replace("_", "/"),
-                data: series_data
+                type: "candlestick",
+                data: series_data,
+                yAxis: 0
+            }, {
+                name: "Message History",
+                data: messages,
+                lineWidth: 0,
+                marker: {
+                    enabled: true,
+                    radius: 10
+                },
+                tooltip: {
+                    valueDecimals: 2
+                },
+                yAxis: 0
             }]
         });
     });
@@ -217,26 +231,30 @@ $(document).ready(function() {
     });
 
     // TODO: add router, Sammy or Backbone
-    //router = Sammy(function() {
-    //    // profile pages
-    //    this.get(/\#\/profile\/(.*)/, function() {
-    //        var display_name = this.params['splat'];
-    //
-    //        var profile_promise = get_profile(display_name);
-    //
-    //        profile_promise.done(function() {
-    //            show_view('profile');
-    //        });
-    //    });
-    //
-    //    // leaderboard pages
-    //    this.get(/\#\/charts\/(\d+)/, function() {
-    //        var currency_pair = this.params['splat'];
-    //        show_view('chart');
-    //    });
-    //
-    //});
-    //router.run(); 
+    router = Sammy(function() {
+        // profile pages
+        this.get(/\#\/profile\/(.*)/, function() {
+            var display_name = this.params['splat'];
+    
+            var profile_promise = get_profile(display_name);
+    
+            profile_promise.done(function() {
+                show_view('profile');
+            });
+        });
+    
+        // leaderboard pages
+        this.get(/\#\/charts\/(\D+)/, function() {
+            var currency_pair = this.params['splat'];
+            show_view('chart');
+        });
+
+        // home page
+        this.get(/(\/|\#\/)/, function() {
+            show_view('chart');
+        });
+    });
+    router.run(); 
 });
 
 // adds a new message to the chat area
