@@ -136,34 +136,37 @@ io.sockets.on('connection', function(socket) {
 
     // when the client emits 'adduser', this listens and executes
     socket.on('adduser', function(username){
-        // we store the username in the socket session for this client
-        socket.gravatar = gravatar.url(username);
-        socket.username = username;
+        if (socket.room) {
+            // we store the username in the socket session for this client
+            socket.gravatar = gravatar.url(username);
+            socket.username = username;
 
-        // add the client's username to the room list
-        if (!rooms[socket.room])
-            rooms[socket.room] = newRoom(socket.room);
-        rooms[socket.room].usernames[username] = username;
+            // add the client's username to the room list
+            if (!rooms[socket.room])
+                rooms[socket.room] = newRoom(socket.room);
+            rooms[socket.room].usernames[username] = username;
 
-        var now = new Date().getTime();
-        var update = {
-                username: 'SERVER',
-                text: 'you have connected',
-                timestamp: now,
-                gravatar: socket.gravatar
-            };
-        // echo to client they've connected
-        socket.emit('updatechat', update);
+            var now = new Date().getTime();
+            var update = {
+                    username: 'SERVER',
+                    text: 'you have connected',
+                    timestamp: now,
+                    gravatar: socket.gravatar
+                };
+            // echo to client they've connected
+            socket.emit('updatechat', update);
 
-        update.text = username + ' has connected';
-        // echo globally (all clients) that a person has connected
-        socket.broadcast.to(socket.room).emit('updatechat', update);
-        // update the list of users in chat, client-side
-        io.sockets.in(socket.room).emit('updateusers', rooms[socket.room].usernames);
+            update.text = username + ' has connected';
+            // echo globally (all clients) that a person has connected
+            socket.broadcast.to(socket.room).emit('updatechat', update);
+            // update the list of users in chat, client-side
+            io.sockets.in(socket.room).emit('updateusers',
+                rooms[socket.room].usernames);
 
-        // cache the chat
-        rooms[socket.room].chat[now] = {chat: update};
-        updateDatabase(socket.room, update);
+            // cache the chat
+            rooms[socket.room].chat[now] = {chat: update};
+            updateDatabase(socket.room, update);
+        }
     });
 
     // when the user disconnects.. perform this
