@@ -126,6 +126,7 @@ $(document).ready(function() {
     });
 
     socket.on('snapshot', function(data) {
+        console.log(data);
         $.each(data.candles.S5, function(i, e) {
             series_data.push([e.time * 1000, e['open mid'], e['high mid'], e['low mid'], e['close mid']]);
         });

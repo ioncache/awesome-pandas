@@ -14,7 +14,8 @@
     "socket.io": "latest",
     "send": "latest",
     "restler": "latest",
-    "gravatar": "latest"
+    "gravatar": "latest",
+    "nano": "latest"
   },
   "engines": {
     "node": "0.8.x"
