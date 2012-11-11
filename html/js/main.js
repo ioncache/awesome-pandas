@@ -1,12 +1,20 @@
-var room = 'USD_CAD';
+var connected = false;
+var routed = false;
+var room;
+
 var socket = io.connect(location.origin);
-var session_id;
 var series_data = [];
-var granularities = ["D", "H1", "H12", "H2", "H3", "H4", "H6", "H8", "M", "M1", "M10", "M15", "M2", "M3", "M30", "M4", "M5", "S10", "S15", "S30", "S5", "W"];
 var currency_pairs = [ "EUR_USD", "USD_CAD" ];
 
 $(document).ready(function() {
-
+/*
+    $.ajax({
+        type: "GET",
+        url: "/config",
+        success: function(response, status, xhr) {
+            console.log(response);
+        }});
+*/
     // make currency pair dropdown
     var currency_dropdown = $("#currency_dropdown");
     for ( var i in currency_pairs ) {
@@ -116,12 +124,16 @@ $(document).ready(function() {
 
     // on connection to server, ask for user's name with an anonymous callback
     socket.on('connect', function() {
-        socket.emit('join', room);
+        connected = true;
+console.log('connect', room, connected, routed);
+        if (routed && room)
+            socket.emit('join', room);
     });
 
     // gets an initial snapshot of the chat and some historical data for the currency pair
     // sets up the chart with data feed and messages
     socket.on('snapshot', function(data) {
+console.log('snapshot', data);
         var messages = [];
         var chat = data.chat;
         for (var key in chat) {
@@ -147,9 +159,12 @@ $(document).ready(function() {
             b = b[0];
             return a < b ? -1 : (a > b ? 1 : 0);
         });
+        $("#chat_container").empty();
         $.each(messages, function(i, e) {
             new_chat_message(e[1]);
         });
+
+        series_data = [];
         $.each(data.candles.S5, function(i, e) {
             series_data.push([e.time * 1000, e['open mid'], e['high mid'], e['low mid'], e['close mid']]);
         });
@@ -214,8 +229,12 @@ $(document).ready(function() {
 
     // new curnecy candles are added to the chart
     socket.on('candle', function(data) {
+console.log('candle', data);
+      if (data) {
         var new_point = [data.time * 1000, data['open mid'], data['high mid'], data['low mid'], data['close mid']];
-        chart.series[0].addPoint(new_point, true, true);
+        if (chart && chart.series)
+            chart.series[0].addPoint(new_point, true, true);
+      }
     });
 
     // listener, whenever the server emits 'updatechat', this updates the chat body
@@ -236,26 +255,21 @@ $(document).ready(function() {
 
     // TODO: add router, Sammy or Backbone
     router = Sammy(function() {
-        // profile pages
-        this.get(/\#\/profile\/(.*)/, function() {
-            var display_name = this.params['splat'];
-    
-            var profile_promise = get_profile(display_name);
-    
-            profile_promise.done(function() {
-                show_view('profile');
-            });
-        });
-    
-        // leaderboard pages
-        this.get(/\#\/charts\/(\D+)/, function() {
-            var currency_pair = this.params['splat'];
-            show_view('chart');
-        });
+        this.get('#/charts/:room', function() {
+            console.log(room, this.params['room']);
+            room = this.params['room'];
+            routed = true;
 
-        // home page
-        this.get(/(\/|\#\/)/, function() {
-            show_view('chart');
+            $('#chat_about_title')
+                .text('Chat about ' + room.replace("_", "/"))
+
+console.log('sammy', room, connected, routed);
+            if (connected && room)
+                socket.emit('join', room);
+        });
+        this.get(/(\/|\#\/)/, function(context) {
+            console.log('default');
+            context.redirect('#/charts/USD_CAD');
         });
     });
     router.run(); 

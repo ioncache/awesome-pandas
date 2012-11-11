@@ -76,10 +76,11 @@ function fetchChat(instrument) {
         dbs[room.db_name] = nano.use(room.db_name);
 
     dbs[room.db_name].list({descending: true}, function(err, data) {
+      if (!err)
         for (var i = 0; i < data.total_rows; i++) {
             dbs[room.db_name].get(data.rows[i].key, function(err, data) {
                 if (!data.username || !data.text || !data.gravatar) {
-                    console.log('bad data', data);
+                    console.log(instrument, 'bad data', data);
                 } else {
                     data.timestamp = data.timestamp - (2 * 24 * 60 * 60 * 1000) + (3 * 60 * 60 * 1000);
                     room.chat[data.timestamp] = data;
@@ -113,27 +114,39 @@ function updateDatabase(room, update) {
 var usernames = {};
 io.sockets.on('connection', function(socket) {
 
-    // when the client emits 'sendchat', this listens and executes
     socket.on('sendchat', function (data) {
-        var now = new Date().getTime(),
-            update = {
-                username: socket.username,
-                text: data.message,
-                prediction: data.prediction,
-                timestamp: now,
-                gravatar: socket.gravatar
-            };
-        // we tell the client to execute 'updatechat' with 2 parameters
-        io.sockets.in(socket.room).emit('updatechat', update);
+        if (socket.room && socket.username) {
+            var now = new Date().getTime(),
+                update = {
+                    username: socket.username,
+                    text: data.message,
+                    prediction: data.prediction,
+                    timestamp: now,
+                    gravatar: socket.gravatar
+                };
 
-        // cache the chat
-        rooms[socket.room].chat[now] = {chat: update};
-        updateDatabase(socket.room, update);
+            io.sockets.in(socket.room).emit('updatechat', update);
+
+            // cache the chat
+            rooms[socket.room].chat[now] = {chat: update};
+            updateDatabase(socket.room, update);
+        }
     });
 
     socket.on('join', function(room) {
+        if (socket.room) {
+            socket.leave(socket.room);
+            if (socket.username) {
+                removeUser(socket.room, socket.username);
+            }
+        }
+
         socket.room = room;
         socket.join(room);
+
+        if (socket.username) {
+            addUser(room, socket.username);
+        }
 
         socket.emit('snapshot', rooms[room]);
     });
@@ -163,33 +176,37 @@ io.sockets.on('connection', function(socket) {
             socket.gravatar = gravatar.url(username);
             socket.username = username;
 
-            // add the client's username to the room list
-            if (!rooms[socket.room])
-                rooms[socket.room] = newRoom(socket.room);
-            rooms[socket.room].usernames[username] = username;
-
-            var now = new Date().getTime();
-            var update = {
-                    username: 'SERVER',
-                    text: 'you have connected',
-                    timestamp: now,
-                    gravatar: socket.gravatar
-                };
-            // echo to client they've connected
-            socket.emit('updatechat', update);
-
-            update.text = username + ' has connected';
-            // echo globally (all clients) that a person has connected
-            socket.broadcast.to(socket.room).emit('updatechat', update);
-            // update the list of users in chat, client-side
-            io.sockets.in(socket.room).emit('updateusers',
-                rooms[socket.room].usernames);
-
-            // cache the chat
-            rooms[socket.room].chat[now] = {chat: update};
-            updateDatabase(socket.room, update);
+            addUser(socket.room, username);
         }
     });
+
+    function addUser(room, username) {
+        // add the client's username to the room list
+        if (!rooms[room])
+            rooms[room] = newRoom(room);
+        rooms[room].usernames[username] = username;
+
+        // update the list of users in chat, client-side
+        io.sockets.in(room).emit('updateusers', rooms[room].usernames);
+
+        var now = new Date().getTime();
+        var update = {
+                username: 'SERVER',
+                text: 'you have connected',
+                timestamp: now,
+                gravatar: socket.gravatar
+            };
+        // echo to client they've connected
+        socket.emit('updatechat', update);
+
+        update.text = username + ' has connected';
+        // echo globally (all clients) that a person has connected
+        socket.broadcast.to(room).emit('updatechat', update);
+
+        // cache the chat
+        rooms[room].chat[now] = {chat: update};
+        updateDatabase(room, update);
+    }
 
     function removeUser(room, username) {
         delete rooms[socket.room].usernames[socket.username];
@@ -238,8 +255,14 @@ var data = {
             {
                 instrument: "USD_CAD",
                 granularity: "S5",
-//                start: 1352498405
-                start: 1352477550
+        //        start: 1352477550
+                start: 1352490000
+            },
+            {
+                instrument: "EUR_USD",
+                granularity: "S5",
+        //        start: 1352477550
+                start: 1352490000
             }
         ]
     };
@@ -247,6 +270,21 @@ var data = {
 var last;
 var keys;
 function setupCandles() {
+    keys = Object.keys(cache['EUR_USD'].candles['S5']);
+
+    if (!rooms['EUR_USD'])
+        rooms['EUR_USD'] = newRoom('EUR_USD');
+    if (!rooms['EUR_USD'].candles['S5'])
+        rooms['EUR_USD'].candles['S5'] = {};
+
+    for (last = 0; last < 200 && last < keys.length; last++) {
+        var index = keys[last];
+        var candle = cache['EUR_USD'].candles['S5'][index];
+        rooms['EUR_USD'].candles['S5'][index] = candle;
+    }
+
+    fetchChat('EUR_USD');
+
     keys = Object.keys(cache['USD_CAD'].candles['S5']);
 
     if (!rooms['USD_CAD'])
@@ -269,10 +307,19 @@ console.log('trickle', last, keys.length);
         var index = keys[last++];
 
         var index = keys[last];
-        var candle = cache['USD_CAD'].candles['S5'][index];
-        rooms['USD_CAD'].candles['S5'][index] = candle;
+        var candle = cache['EUR_USD'].candles['S5'][index];
+        if (candle) {
+            rooms['EUR_USD'].candles['S5'][index] = candle;
+            io.sockets.in('EUR_USD').emit('candle', candle);
+        }
 
-        io.sockets.in('USD_CAD').emit('candle', candle);
+        var index = keys[last];
+        var candle = cache['USD_CAD'].candles['S5'][index];
+
+        if (candle) {
+            rooms['USD_CAD'].candles['S5'][index] = candle;
+            io.sockets.in('USD_CAD').emit('candle', candle);
+        }
 
         setTimeout(trickle, 5000);
     }
@@ -311,10 +358,18 @@ var now = Math.floor(new Date().getTime() / 1000);
 var then = now - (2 * 24 * 60 * 60); // 2 DAYS AGO
 then = Math.floor(then / 10) * 10; // round to nearest 10 seconds
 
-data.candles[0].start = then;
+//for (var i = 0; i < data.candles.length; i++) {
+//    data.candles[i].start = then;
+//}
+console.log(data);
+
+//rest.getJson(host + "/v1/
 
 rest.postJson(host + '/v1/instruments/poll', data)
     .on('complete', function(data, response) {
+        console.log(response.rawEncoded);
+        console.log(data.sessionId);
+
         sessionId = data.sessionId;
 
         poll();
