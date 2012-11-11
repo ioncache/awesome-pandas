@@ -78,7 +78,11 @@ function fetchChat(instrument) {
     dbs[room.db_name].list({descending: true}, function(err, data) {
         for (var i = 0; i < data.total_rows; i++) {
             dbs[room.db_name].get(data.rows[i].key, function(err, data) {
-                room.chat[data.timestamp] = data;
+                if (!data.username || !data.text || !data.gravatar) {
+                    console.log('bad data', data);
+                } else {
+                    room.chat[data.timestamp] = data;
+                }
             });
         }
     });
@@ -94,7 +98,6 @@ function insert_doc(db, db_name, doc, tried) {
                 });
             } else { return console.log(error); }
         }
-        console.log(http_body);
     });
 }
 
@@ -172,7 +175,6 @@ io.sockets.on('connection', function(socket) {
     // when the user disconnects.. perform this
     socket.on('disconnect', function(){
 
-console.log('disconenct', socket.room, socket.username);
         // remove the username from global usernames list
         if (socket.room) {
             socket.leave(socket.room);
@@ -228,7 +230,6 @@ function setupCandles() {
     if (!rooms['USD_CAD'].candles['S5'])
         rooms['USD_CAD'].candles['S5'] = {};
 
-console.log('setup', keys.length);
     for (last = 0; last < 200 && last < keys.length; last++) {
         var index = keys[last];
         var candle = cache['USD_CAD'].candles['S5'][index];
@@ -256,7 +257,6 @@ console.log('trickle', last, keys.length);
 var poll = function() {
     rest.get(host + '/v1/instruments/poll?sessionId=' + sessionId)
         .on('complete', function(data, response) {
-            console.log(data);
             var candles = data.candles;
 
             if (candles) {
@@ -276,7 +276,6 @@ var poll = function() {
                     }
                 }
             }
-//            console.log(cache);
 
             setupCandles();
             trickle();
@@ -292,9 +291,6 @@ data.candles[0].start = then;
 
 rest.postJson(host + '/v1/instruments/poll', data)
     .on('complete', function(data, response) {
-        console.log(response.rawEncoded);
-        console.log(data.sessionId);
-
         sessionId = data.sessionId;
 
         poll();
