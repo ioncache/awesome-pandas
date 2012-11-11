@@ -245,7 +245,7 @@ console.log('snapshot', data);
                     count: 1,
                     text: "All"
                 }],
-                selected: 3,
+                selected: 7,
                 inputEnabled: false
             },
 
