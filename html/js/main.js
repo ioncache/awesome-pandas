@@ -2,8 +2,34 @@ var room = 'USD_CAD';
 var socket = io.connect(location.origin);
 var session_id;
 var series_data = [];
+var granularities = [
+    "D",
+    "H1",
+    "H12",
+    "H2",
+    "H3",
+    "H4",
+    "H6",
+    "H8",
+    "M",
+    "M1",
+    "M10",
+    "M15",
+    "M2",
+    "M3",
+    "M30",
+    "M4",
+    "M5",
+    "S10",
+    "S15",
+    "S30",
+    "S5",
+    "W"
+];
 
 $(document).ready(function() {
+    
+    // Click Events
     $("#signin").click(function(e) {
         navigator.id.request();
         e.preventDefault();
@@ -14,6 +40,38 @@ $(document).ready(function() {
         e.preventDefault();
     });
 
+    $('#send_message').click(function() {
+        var message = $("#message").val();
+        $("#message").val("");
+        // tell server to execute 'sendchat' and send along one parameter
+        socket.emit("sendchat", {
+            message: message,
+            prediction: $("#prediction").val()
+        });
+        $("#message").focus();
+    });
+
+    // when the client hits ENTER on their keyboard
+    $("#message").keypress(function(e) {
+        if (e.which == 13) {
+            $(this).blur();
+            $("#send_message").focus().click();
+        }
+    });
+    
+    // enable some button functionality
+    $("#prediction_buttons").on("click", "button", function() {
+        var show = $(this).hasClass("active") ? 0 : 1;
+        $("#prediction_buttons button").removeClass("active");
+        if ( show ) {
+            $(this).addClass("active");
+        }
+    });
+
+    // enable tooltips
+    $(".tool_tip").tooltip({ placement: "bottom" });
+
+    // Persona Auth setup
     navigator.id.watch({
         loggedInUser: null,
         onlogin: function(assertion) {
@@ -60,6 +118,8 @@ $(document).ready(function() {
         }
     });
 
+    // socket.io methods
+    
     // on connection to server, ask for user's name with an anonymous callback
     socket.on('connect', function() {
         socket.emit('join', room);
@@ -140,21 +200,6 @@ $(document).ready(function() {
         });
     });
 
-    $('#send_message').click(function() {
-        var message = $("#message").val();
-        $("#message").val("");
-        // tell server to execute 'sendchat' and send along one parameter
-        socket.emit("sendchat", message);
-    });
-
-    // when the client hits ENTER on their keyboard
-    $("#message").keypress(function(e) {
-        if (e.which == 13) {
-            $(this).blur();
-            $("#send_message").focus().click();
-        }
-    });
-
     // TODO: add router, Sammy or Backbone
     //router = Sammy(function() {
     //    // profile pages
@@ -178,6 +223,7 @@ $(document).ready(function() {
     //router.run(); 
 });
 
+// adds a new message to the chat area
 function new_chat_message(data) {
     var message_class = "alert-chat-message-" + ($("#chat_container").children().length % 2 ? "even" : "odd");
     var time = new Date(0);
@@ -187,6 +233,7 @@ function new_chat_message(data) {
     }).html("<img src=\"" + data.gravatar + "?size=16\" />&nbsp;&nbsp;<strong>[" + time.toUTCString() + "] " + data.username.replace(/^(\w*)@.*$/, "$1") + ":</strong>&nbsp;&nbsp;" + data.text).prependTo("#chat_container");
 }
 
+// simple view switcher
 function show_view(view) {
     $(".view").fadeOut(200);
     $(".menu_item").removeClass("active");

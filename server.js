@@ -73,7 +73,8 @@ io.sockets.on('connection', function(socket) {
         var now = new Date().getTime(),
             update = {
                 username: socket.username,
-                text: data,
+                text: data.message,
+                prediction: data.prediction,
                 timestamp: now,
                 gravatar: socket.gravatar
             };
