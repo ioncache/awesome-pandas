@@ -3,7 +3,8 @@ var http = require('http'),
     socketio = require('socket.io'),
     rest = require('restler'),
     qs = require('querystring'),
-    gravatar = require('gravatar');
+    gravatar = require('gravatar'),
+    nano = require('nano')('http://nodejitsudb1638891429.iriscouch.com:5984');
 
 var handler = function(request, response) {
     console.log(request.url);
@@ -22,8 +23,6 @@ var handler = function(request, response) {
                     audience: request.headers.host
                 })
                 .on('complete', function(data, res) {
-                    console.log(data);
-
                     response.writeHead(200, {'Content-Type': 'application/json'});
                     response.end(JSON.stringify({
                         username: data.email,
@@ -54,15 +53,57 @@ var handler = function(request, response) {
 var app = http.createServer(handler),
     io = socketio.listen(app);
 
+var dbs = {};
 var rooms = {};
 var cache = {};
 
-function newRoom() {
-    return {
+function newRoom(instrument) {
+    var room = {
+            instrument: instrument,
+            db_name: instrument.toLowerCase(),
             usernames: {},
             candles: {},
             chat: {}
         };
+
+    return room;
+}
+
+function fetchChat(instrument) {
+    var room = rooms[instrument];
+
+    if (!dbs[room.db_name])
+        dbs[room.db_name] = nano.use(room.db_name);
+
+    dbs[room.db_name].list({descending: true}, function(err, data) {
+        for (var i = 0; i < data.total_rows; i++) {
+            dbs[room.db_name].get(data.rows[i].key, function(err, data) {
+                room.chat[data.timestamp] = data;
+            });
+        }
+    });
+}
+
+function insert_doc(db, db_name, doc, tried) {
+    db.insert(doc, function (error,http_body,http_headers) {
+        if(error) {
+            if(error.message === 'no_db_file'  && tried < 1) {
+                // create database and retry
+                return nano.db.create(db_name, function () {
+                    insert_doc(db, db_name, doc, tried+1);
+                });
+            } else { return console.log(error); }
+        }
+        console.log(http_body);
+    });
+}
+
+function updateDatabase(room, update) {
+    var db_name = room.toLowerCase();
+    if (!dbs[room])
+        dbs[room] = nano.use(db_name);
+
+    insert_doc(dbs[room], db_name, update, 0);
 }
 
 var usernames = {};
@@ -83,6 +124,7 @@ io.sockets.on('connection', function(socket) {
 
         // cache the chat
         rooms[socket.room].chat[now] = {chat: update};
+        updateDatabase(socket.room, update);
     });
 
     socket.on('join', function(room) {
@@ -100,7 +142,7 @@ io.sockets.on('connection', function(socket) {
 
         // add the client's username to the room list
         if (!rooms[socket.room])
-            rooms[socket.room] = newRoom();
+            rooms[socket.room] = newRoom(socket.room);
         rooms[socket.room].usernames[username] = username;
 
         var now = new Date().getTime();
@@ -121,6 +163,7 @@ io.sockets.on('connection', function(socket) {
 
         // cache the chat
         rooms[socket.room].chat[now] = {chat: update};
+        updateDatabase(socket.room, update);
     });
 
     // when the user disconnects.. perform this
@@ -150,6 +193,7 @@ console.log('disconenct', socket.room, socket.username);
 
                 // cache the chat
                 rooms[socket.room].chat[now] = {chat: update};
+                updateDatabase(socket.room, update);
             }
         }
     });
@@ -177,7 +221,7 @@ function setupCandles() {
     keys = Object.keys(cache['USD_CAD'].candles['S5']);
 
     if (!rooms['USD_CAD'])
-        rooms['USD_CAD'] = newRoom();
+        rooms['USD_CAD'] = newRoom('USD_CAD');
     if (!rooms['USD_CAD'].candles['S5'])
         rooms['USD_CAD'].candles['S5'] = {};
 
@@ -187,6 +231,8 @@ console.log('setup', keys.length);
         var candle = cache['USD_CAD'].candles['S5'][index];
         rooms['USD_CAD'].candles['S5'][index] = candle;
     }
+
+    fetchChat('USD_CAD');
 };
 
 function trickle() {
@@ -218,7 +264,7 @@ var poll = function() {
                         interval = next.granularity;
 
                     if (!cache[instrument])
-                        cache[instrument] = newRoom();
+                        cache[instrument] = newRoom(instrument);
                     if (!cache[instrument].candles[interval])
                         cache[instrument].candles[interval] = {};
                     for (var j = 0, l2 = next.candles.length; j < l2; j++) {
