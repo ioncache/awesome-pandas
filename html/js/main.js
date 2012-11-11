@@ -146,14 +146,16 @@ console.log('snapshot', data);
             candle_data.push([time.getTime(), e['open mid'], e['high mid'], e['low mid'], e['close mid']]);
         });
         for (var key in chat) {
-            messages.push([key,
-            {
-                timestamp: key,
-                username: chat[key].username,
-                text: chat[key].text,
-                gravatar: chat[key].gravatar,
-                prediction: chat[key].prediction
-            }]);
+            if ( chat[key].username !== "SERVER" ) {
+                messages.push([key,
+                {
+                    timestamp: key,
+                    username: chat[key].username,
+                    text: chat[key].text,
+                    gravatar: chat[key].gravatar,
+                    prediction: chat[key].prediction
+                }]);
+            }
         }
 
         // only show messages on chart going back as far as we hve candles
@@ -167,7 +169,7 @@ console.log('snapshot', data);
                 message_flags.push({
                    x: message_time,
                    title: title_symbol,
-                   text: '<img src="' + messages[i][1].gravatar + '?size=16" />' + messages[i][1].username + " said at:<br />" + messages[i][1].text
+                   text: "<br /><strong>" + messages[i][1].username.replace(/^(\w*)@.*$/, "$1") + "</strong> said:<br />" + messages[i][1].text
                 });
             }
         }
@@ -269,9 +271,15 @@ console.log('candle', data);
     socket.on('updatechat', function(data) {
         new_chat_message(data);
         if ( data.username !== "SERVER" ) {
-            //var new_flag =  [ (new Date(0)).setMilliseconds(data.timestamp), String.fromCharCode(8226), '<img src="' + messages[i][1].gravatar + '?size=16" />' + messages[i][1].username + " said at:<br />" + messages[i][1].text ];
-            //var new_flag = [data.time * 1000, data['open mid'], data['high mid'], data['low mid'], data['close mid']];
-            //chart.series[1].addPoint(new_point, true, true);
+            var message_time = (new Date(0)).setMilliseconds(data.timestamp);
+            var char_code = data.prediction > 0 ? 9650 : data.prediction < 0 ? 9660 : 8226;
+            var title_symbol = String.fromCharCode(char_code);
+            var new_flag = {
+               x: message_time,
+               title: title_symbol,
+               text: "<br /><strong>" + data.username.replace(/^(\w*)@.*$/, "$1") + "</strong> said:<br />" + data.text
+            };
+            chart.series[1].addPoint(new_flag, true, true);
         }
     });
 
@@ -320,7 +328,7 @@ function new_chat_message(data) {
 
     var new_message = $("<div />").addClass("alert " + message_class).css({
         "margin-bottom": "0.65em"
-    }).html("<img src=\"" + data.gravatar + "?size=16\" />&nbsp;&nbsp;<strong>[" + time.toString() + "] " + data.username.replace(/^(\w*)@.*$/, "$1") + ":</strong>&nbsp;&nbsp;" + data.text);
+    }).html("<img src=\"" + data.gravatar + "?size=16\" />&nbsp;&nbsp;<strong>[" + time.toUTCString() + "] " + data.username.replace(/^(\w*)@.*$/, "$1") + ":</strong>&nbsp;&nbsp;" + data.text);
 
     if ( data.prediction > 0 || data.prediction < 0 ) {
         var arrow_icon = "icon-arrow-" + (data.prediction > 0 ? "up" : "down");
