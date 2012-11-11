@@ -122,7 +122,7 @@ io.sockets.on('connection', function(socket) {
             io.sockets.in(socket.room).emit('updatechat', update);
 
             // cache the chat
-            rooms[socket.room].chat[now] = {chat: update};
+            rooms[socket.room].chat[now] = update;
             updateDatabase(socket.room, update);
         }
     });
@@ -191,7 +191,7 @@ io.sockets.on('connection', function(socket) {
                 gravatar: socket.gravatar
             };
         // echo to client they've connected
-        update.timestamp = update.timestamp - (2 * 24 * 60 * 60 * 1000);
+        update.timestamp = update.timestamp;
         socket.emit('updatechat', update);
 
         update.text = username + ' has connected';
@@ -199,7 +199,7 @@ io.sockets.on('connection', function(socket) {
         socket.broadcast.to(room).emit('updatechat', update);
 
         // cache the chat
-        rooms[room].chat[now] = {chat: update};
+        rooms[room].chat[now] = update;
         updateDatabase(room, update);
     }
 
@@ -221,7 +221,7 @@ io.sockets.on('connection', function(socket) {
         socket.broadcast.to(socket.room).emit('updatechat', update);
 
         // cache the chat
-        rooms[socket.room].chat[now] = {chat: update};
+        rooms[socket.room].chat[now] = update;
         updateDatabase(socket.room, update);
     }
 
