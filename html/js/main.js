@@ -1,7 +1,6 @@
 var room = 'USD_CAD';
 var socket = io.connect(location.origin);
 var session_id;
-var series_data = [];
 var granularities = ["D", "H1", "H12", "H2", "H3", "H4", "H6", "H8", "M", "M1", "M10", "M15", "M2", "M3", "M30", "M4", "M5", "S10", "S15", "S30", "S5", "W"];
 var currency_pairs = [ "EUR_USD", "USD_CAD" ];
 
@@ -123,7 +122,15 @@ $(document).ready(function() {
     // sets up the chart with data feed and messages
     socket.on('snapshot', function(data) {
         var messages = [];
+        var message_flags = [];
+        var candle_data = [];
         var chat = data.chat;
+        
+        $.each(data.candles.S5, function(i, e) {
+            var time = new Date(0);
+            time.setUTCSeconds(e.time);
+            candle_data.push([time.getTime(), e['open mid'], e['high mid'], e['low mid'], e['close mid']]);
+        });
         for (var key in chat) {
             messages.push([key,
             {
@@ -133,14 +140,20 @@ $(document).ready(function() {
                 gravatar: chat[key].gravatar
             }]);
         }
-        var message_flags = [];
+
+        // only show messages on chart going back as far as we hve candles
+        var first_candle = candle_data[0][0];
+        var last_candle = candle_data[candle_data.length - 1][0];
+        var title_symbol = String.fromCharCode(8226);
         for (var i in messages) {
-            var title_symbol = String.fromCharCode(8226);
-            message_flags.push({
-               x: (new Date(0)).setMilliseconds(messages[i][0]),
-               title: title_symbol,
-               text: '<img src="' + messages[i][1].gravatar + '?size=16" />' + messages[i][1].username + " said at:<br />" + messages[i][1].text
-            });
+            var message_time = (new Date(0)).setMilliseconds(messages[i][0]);
+            if ( message_time >= first_candle && message_time <= last_candle ) {
+                message_flags.push({
+                   x: message_time,
+                   title: title_symbol,
+                   text: '<img src="' + messages[i][1].gravatar + '?size=16" />' + messages[i][1].username + " said at:<br />" + messages[i][1].text
+                });
+            }
         }
         messages.sort(function(a, b) {
             a = a[0];
@@ -149,9 +162,6 @@ $(document).ready(function() {
         });
         $.each(messages, function(i, e) {
             new_chat_message(e[1]);
-        });
-        $.each(data.candles.S5, function(i, e) {
-            series_data.push([e.time * 1000, e['open mid'], e['high mid'], e['low mid'], e['close mid']]);
         });
         // create the chart
         chart = new Highcharts.StockChart({
@@ -199,7 +209,7 @@ $(document).ready(function() {
             series: [{
                 name: room.replace("_", "/"),
                 type: "candlestick",
-                data: series_data,
+                data: candle_data,
                 id: "candlesticks"
             }, {
                 name: "Message History",
@@ -221,6 +231,11 @@ $(document).ready(function() {
     // listener, whenever the server emits 'updatechat', this updates the chat body
     socket.on('updatechat', function(data) {
         new_chat_message(data);
+        if ( data.username !== "SERVER" ) {
+            //var new_flag =  [ (new Date(0)).setMilliseconds(data.timestamp), String.fromCharCode(8226), '<img src="' + messages[i][1].gravatar + '?size=16" />' + messages[i][1].username + " said at:<br />" + messages[i][1].text ];
+            //var new_flag = [data.time * 1000, data['open mid'], data['high mid'], data['low mid'], data['close mid']];
+            //chart.series[1].addPoint(new_point, true, true);
+        }
     });
 
     // listener, whenever the server emits 'updateusers', this updates the username list
@@ -263,18 +278,17 @@ $(document).ready(function() {
 
 // adds a new message to the chat area
 function new_chat_message(data) {
-    if (!data.username || !data.timestamp || !data.gravatar)
+    if (typeof(data.username) == "undefined" || typeof(data.timestamp) == "undefined" || typeof(data.gravatar) == "undefined") {
         return;
+    }
 
     var message_class = "alert-chat-message-" + ($("#chat_container").children().length % 2 ? "even" : "odd");
     var time = new Date(0);
     time.setMilliseconds(data.timestamp);
-    if (typeof(data.username) == "undefined") {
-        data.username = "unknown";
-    }
+
     $("<div />").addClass("alert " + message_class).css({
         "margin-bottom": "0.65em"
-    }).html("<img src=\"" + data.gravatar + "?size=16\" />&nbsp;&nbsp;<strong>[" + time.toUTCString() + "] " + data.username.replace(/^(\w*)@.*$/, "$1") + ":</strong>&nbsp;&nbsp;" + data.text).prependTo("#chat_container");
+    }).html("<img src=\"" + data.gravatar + "?size=16\" />&nbsp;&nbsp;<strong>[" + time.toString() + "] " + data.username.replace(/^(\w*)@.*$/, "$1") + ":</strong>&nbsp;&nbsp;" + data.text).prependTo("#chat_container");
 }
 
 // simple view switcher
@@ -284,5 +298,5 @@ function show_view(view) {
     setTimeout(function() {
         $("#" + view).fadeIn(200);
         $("#" + view + "_page").addClass('active');
-    }, 200);
+    }, 210);
 }

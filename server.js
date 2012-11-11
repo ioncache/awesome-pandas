@@ -80,8 +80,8 @@ function fetchChat(instrument) {
             dbs[room.db_name].get(data.rows[i].key, function(err, data) {
                 if (!data.username || !data.text || !data.gravatar) {
                     console.log('bad data', data);
-                } else {
-                    data.timestamp = data.timestamp - (2 * 24 * 60 * 60 * 1000) + (3 * 60 * 60 * 1000);
+                } else if ( data.username !== "SERVER" ) {
+                    data.timestamp = data.timestamp - (2 * 24 * 60 * 60 * 1000);
                     room.chat[data.timestamp] = data;
                 }
             });
@@ -176,6 +176,7 @@ io.sockets.on('connection', function(socket) {
                     gravatar: socket.gravatar
                 };
             // echo to client they've connected
+            update.timestamp = update.timestamp - (2 * 24 * 60 * 60 * 1000);
             socket.emit('updatechat', update);
 
             update.text = username + ' has connected';
