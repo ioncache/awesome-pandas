@@ -152,6 +152,14 @@ console.log('snapshot', data);
         var message_flags = [];
         var candle_data = [];
         var chat = data.chat;
+
+        $("#users").empty();
+        $.each(data.usernames, function(key, value) {
+            var new_message = $("<div />").addClass("label label-info").css({
+                "display": "block",
+                "margin": ".35em 0"
+            }).html(key.replace(/^(\w*)@.*$/, "$1")).appendTo("#users");
+        });
         
         $.each(data.candles.S5, function(i, e) {
             var time = new Date(0);
