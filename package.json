@@ -15,7 +15,8 @@
     "send": "latest",
     "restler": "latest",
     "gravatar": "latest",
-    "nano": "latest"
+    "nano": "latest",
+    "async": "latest"
   },
   "engines": {
     "node": "0.8.x"

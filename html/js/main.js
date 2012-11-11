@@ -151,17 +151,19 @@ console.log('snapshot', data);
                 timestamp: key,
                 username: chat[key].username,
                 text: chat[key].text,
-                gravatar: chat[key].gravatar
+                gravatar: chat[key].gravatar,
+                prediction: chat[key].prediction
             }]);
         }
 
         // only show messages on chart going back as far as we hve candles
         var first_candle = candle_data[0][0];
         var last_candle = candle_data[candle_data.length - 1][0];
-        var title_symbol = String.fromCharCode(8226);
         for (var i in messages) {
             var message_time = (new Date(0)).setMilliseconds(messages[i][0]);
             if ( message_time >= first_candle && message_time <= last_candle ) {
+                var char_code = messages[i][1].prediction > 0 ? 9650 : messages[i][1].prediction < 0 ? 9660 : 8226;
+                var title_symbol = String.fromCharCode(char_code);
                 message_flags.push({
                    x: message_time,
                    title: title_symbol,
@@ -306,9 +308,23 @@ function new_chat_message(data) {
     var time = new Date(0);
     time.setMilliseconds(data.timestamp);
 
-    $("<div />").addClass("alert " + message_class).css({
+    var new_message = $("<div />").addClass("alert " + message_class).css({
         "margin-bottom": "0.65em"
-    }).html("<img src=\"" + data.gravatar + "?size=16\" />&nbsp;&nbsp;<strong>[" + time.toString() + "] " + data.username.replace(/^(\w*)@.*$/, "$1") + ":</strong>&nbsp;&nbsp;" + data.text).prependTo("#chat_container");
+    }).html("<img src=\"" + data.gravatar + "?size=16\" />&nbsp;&nbsp;<strong>[" + time.toString() + "] " + data.username.replace(/^(\w*)@.*$/, "$1") + ":</strong>&nbsp;&nbsp;" + data.text);
+
+    if ( data.prediction > 0 || data.prediction < 0 ) {
+        var arrow_icon = "icon-arrow-" + (data.prediction > 0 ? "up" : "down");
+        $("<i />")
+            .addClass(arrow_icon)
+            .css({
+                position: "absolute",
+                top: "5px",
+                right: "5px"
+            })
+            .appendTo(new_message);
+    }
+    
+    new_message.prependTo("#chat_container");
 }
 
 // simple view switcher
