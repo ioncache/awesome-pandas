@@ -42,13 +42,21 @@ $(document).ready(function() {
 
     $('#send_message').click(function() {
         var message = $("#message").val();
-        $("#message").val("");
-        // tell server to execute 'sendchat' and send along one parameter
-        socket.emit("sendchat", {
-            message: message,
-            prediction: $("#predict_rise").hasClass("active") ? 1 : $("#predict_fall").hasClass("active") ? -1 : 0
-        });
-        $("#message").focus();
+        if ( typeof(message) != "undefined" && message !== "" ) {
+            $("#message").val("");
+            // tell server to execute 'sendchat' and send along one parameter
+            socket.emit("sendchat", {
+                message: message,
+                prediction: $("#predict_rise").hasClass("active") ? 1 : $("#predict_fall").hasClass("active") ? -1 : 0
+            });
+            
+            // reset the prediction buttons so the user doesn't accidentally
+            // submit the same prediction twice
+            $("#prediction_buttons button").removeClass("active");
+    
+            // refocs on the message box to avoid issues with double enters
+            $("#message").focus();
+        }  
     });
 
     // when the client hits ENTER on their keyboard
