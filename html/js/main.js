@@ -126,7 +126,6 @@ $(document).ready(function() {
         var chat = data.chat;
         for (var key in chat) {
             messages.push([key,
-            .9991,
             {
                 timestamp: key,
                 username: chat[key].username,
@@ -134,13 +133,22 @@ $(document).ready(function() {
                 gravatar: chat[key].gravatar
             }]);
         }
+        var message_flags = [];
+        for (var i in messages) {
+            var title_symbol = String.fromCharCode(8226);
+            message_flags.push({
+               x: (new Date(0)).setMilliseconds(messages[i][0]),
+               title: title_symbol,
+               text: '<img src="' + messages[i][1].gravatar + '?size=16" />' + messages[i][1].username + " said at:<br />" + messages[i][1].text
+            });
+        }
         messages.sort(function(a, b) {
             a = a[0];
             b = b[0];
             return a < b ? -1 : (a > b ? 1 : 0);
         });
         $.each(messages, function(i, e) {
-            new_chat_message(e[2]);
+            new_chat_message(e[1]);
         });
         $.each(data.candles.S5, function(i, e) {
             series_data.push([e.time * 1000, e['open mid'], e['high mid'], e['low mid'], e['close mid']]);
@@ -192,19 +200,14 @@ $(document).ready(function() {
                 name: room.replace("_", "/"),
                 type: "candlestick",
                 data: series_data,
-                yAxis: 0
+                id: "candlesticks"
             }, {
                 name: "Message History",
-                data: messages,
-                lineWidth: 0,
-                marker: {
-                    enabled: true,
-                    radius: 10
-                },
-                tooltip: {
-                    valueDecimals: 2
-                },
-                yAxis: 0
+                type: "flags",
+                data: message_flags,
+				onSeries : "candlesticks",
+				shape : "circlepin",
+				width : 12
             }]
         });
     });

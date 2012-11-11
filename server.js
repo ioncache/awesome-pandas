@@ -81,6 +81,7 @@ function fetchChat(instrument) {
                 if (!data.username || !data.text || !data.gravatar) {
                     console.log('bad data', data);
                 } else {
+                    data.timestamp = data.timestamp - (2 * 24 * 60 * 60 * 1000) + (3 * 60 * 60 * 1000);
                     room.chat[data.timestamp] = data;
                 }
             });
