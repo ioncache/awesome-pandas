@@ -21,6 +21,7 @@ $(document).ready(function() {
     for ( var i in currency_pairs ) {
         var new_pair = $("<li />");
         $("<a />")
+            .addClass("currency_pair_link")
             .attr("tabindex", "-1")
             .attr("href", "#/charts/" +  currency_pairs[i])
             .text(currency_pairs[i].replace("_", "/"))
@@ -28,6 +29,10 @@ $(document).ready(function() {
         
         new_pair.appendTo(currency_dropdown);
     }
+    currency_dropdown.on("click", "a.currency_pair_link", function() {
+        $("#currency_dropdown_toggle").dropdown("toggle")
+    });
+
 
     // Click Events
     $("#signin").click(function(e) {
