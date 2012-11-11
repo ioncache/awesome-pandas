@@ -264,38 +264,6 @@ function parsePollResponse(data, response) {
 
             trimCandles(next.instrument);
         }
-    } else {
-        console.log('hack!!!!');
-        var now = Math.floor(new Date().getTime() / 1000);
-        now = (Math.floor(now / 5)) * 5;
-
-        var candle = {
-                time: now,
-                "open mid": 1.27029,
-                "close mid": 1.27029,
-                "high mid": 1.27039,
-                "low mid": 1.27019,
-                "complete": true
-            };
-
-        rooms['EUR_USD'].candles['S5'][now] = candle;
-        io.sockets.in('EUR_USD').emit('candle', candle);
-
-        trimCandles('EUR_USD');
-
-        var candle = {
-                time: now,
-                "open mid": 1.00029,
-                "close mid": 1.00029,
-                "high mid": 1.00039,
-                "low mid": 1.00019,
-                "complete": true
-            };
-
-        rooms['USD_CAD'].candles['S5'][now] = candle;
-        io.sockets.in('USD_CAD').emit('candle', candle);
-
-        trimCandles('USD_CAD');
     }
 }
 
