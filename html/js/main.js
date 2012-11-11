@@ -46,7 +46,7 @@ $(document).ready(function() {
         // tell server to execute 'sendchat' and send along one parameter
         socket.emit("sendchat", {
             message: message,
-            prediction: $("#prediction").val()
+            prediction: $("#predict_rise").hasClass("active") ? 1 : $("#predict_fall").hasClass("active") ? -1 : 0
         });
         $("#message").focus();
     });
@@ -126,7 +126,19 @@ $(document).ready(function() {
     });
 
     socket.on('snapshot', function(data) {
-        console.log(data);
+        var messages = [];
+        chat = data.chat;
+        for (var key in chat ) {
+            messages.push([key, { timestamp: key, username: chat[key].username, text: chat[key].text, gravatar: chat[key].gravatar }]);
+        }
+        messages.sort(function(a,b) {
+            a = a[0];
+            b = b[0];
+            return a < b ? -1 : (a > b ? 1 : 0);
+        });
+        $.each(messages, function(i, e) {
+            new_chat_message(e[1]);
+        });
         $.each(data.candles.S5, function(i, e) {
             series_data.push([e.time * 1000, e['open mid'], e['high mid'], e['low mid'], e['close mid']]);
         });
