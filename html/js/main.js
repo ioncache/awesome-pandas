@@ -3,8 +3,22 @@ var socket = io.connect(location.origin);
 var session_id;
 var series_data = [];
 var granularities = ["D", "H1", "H12", "H2", "H3", "H4", "H6", "H8", "M", "M1", "M10", "M15", "M2", "M3", "M30", "M4", "M5", "S10", "S15", "S30", "S5", "W"];
+var currency_pairs = [ "EUR_USD", "USD_CAD" ];
 
 $(document).ready(function() {
+
+    // make currency pair dropdown
+    var currency_dropdown = $("#currency_dropdown");
+    for ( var i in currency_pairs ) {
+        var new_pair = $("<li />");
+        $("<a />")
+            .attr("tabindex", "-1")
+            .attr("href", "#/" +  currency_pairs[i])
+            .text(currency_pairs[i].replace("_", "/"))
+        .appendTo(new_pair);
+        
+        new_pair.appendTo(currency_dropdown);
+    }
 
     // Click Events
     $("#signin").click(function(e) {

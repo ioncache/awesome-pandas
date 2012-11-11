@@ -56,8 +56,14 @@ f.parentNode.insertBefore(s,f);};if(w.addEventListener){w.addEventListener("load
                 <div class="container">
                     <a class="brand" href="#/"><span class="title_text">Chart Chat</span></a>
                     <div class="nav-collapse collapse">
-                        <ul class="nav">
-                            <li id="home_page" class="nav-tab menu_item active"><a href="#/">Charts</a></li>
+                        <ul class="nav" role="navigation">
+                            <li id="currency_pairs_page" class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button">
+                                    Currency Pairs
+                                    <b class="caret"></b>
+                                </a>
+                                <ul id="currency_dropdown" class="dropdown-menu" role="menu" aria-labelledby="currency_dropdown"></ul>
+                            </li>
                             <li id="profile_page" class="nav-tab menu_item"><a href="#/leaderboard/1">Profile</a></li>
                         </ul>
                     </div>
