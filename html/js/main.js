@@ -336,8 +336,19 @@ function new_chat_message(data) {
 
     var new_message = $("<div />").addClass("alert " + message_class).css({
         "margin-bottom": "0.65em"
-    }).html("<img src=\"" + data.gravatar + "?size=16\" />&nbsp;&nbsp;<strong>[" + time.toUTCString() + "] " + data.username.replace(/^(\w*)@.*$/, "$1") + ":</strong>&nbsp;&nbsp;" + data.text);
+    })
+        .css("padding-right", "120px")
+        .html("<img src=\"" + data.gravatar + "?size=16\" />&nbsp;&nbsp;<strong>" + data.username.replace(/^(\w*)@.*$/, "$1") + ":</strong>&nbsp;&nbsp;" + data.text);
 
+    $("<span />")
+        .css({
+            position: "absolute",
+            top: "5px",
+            right: "25px"
+        })
+        .text(moment(time).fromNow())
+        .appendTo(new_message);    
+    
     if ( data.prediction > 0 || data.prediction < 0 ) {
         var arrow_icon = "icon-arrow-" + (data.prediction > 0 ? "up" : "down");
         var title_text = (data.prediction > 0 ? "Rising" : "Falling") + " trend prediction.";
