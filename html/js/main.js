@@ -5,7 +5,7 @@ var room;
 var socket = io.connect(location.origin);
 var session_id;
 var granularities = ["D", "H1", "H12", "H2", "H3", "H4", "H6", "H8", "M", "M1", "M10", "M15", "M2", "M3", "M30", "M4", "M5", "S10", "S15", "S30", "S5", "W"];
-var currency_pairs = [ "EUR_USD", "USD_CAD", "USD_JPY", "USD_CHF", "EUR_AUD", "EUR_GBP" ];
+var currency_pairs = ["EUR_AUD", "EUR_GBP", "EUR_USD", "USD_CAD", "USD_CHF", "USD_JPY"];
 
 $(document).ready(function() {
 /*
@@ -307,12 +307,20 @@ console.log('candle', data);
     // listener, whenever the server emits 'updateusers', this updates the username list
     socket.on('updateusers', function(data) {
         $("#users").empty();
+        var users = [];
         $.each(data, function(key, value) {
-            var new_message = $("<div />").addClass("label label-info").css({
+            users.push(key.replace(/^(\w*)@.*$/, "$1"));
+        });
+        users.sort(function(a,b) {
+            return a < b ? -1 : a > b ? 1 : 0;
+        });
+        var user_container = $("#users");
+        for ( var i in users ) {
+            $("<div />").addClass("label label-info").css({
                 "display": "block",
                 "margin": ".35em 0"
-            }).html(key.replace(/^(\w*)@.*$/, "$1")).appendTo("#users");
-        });
+            }).text(users[i]).appendTo(user_container);
+        }
     });
 
     // TODO: add router, Sammy or Backbone
