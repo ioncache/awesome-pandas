@@ -148,11 +148,12 @@ console.log('snapshot', data);
         var message_flags = [];
         for (var i in messages) {
             var title_symbol = String.fromCharCode(8226);
-            message_flags.push({
-               x: (new Date(0)).setMilliseconds(messages[i][0]),
-               title: title_symbol,
-               text: '<img src="' + messages[i][1].gravatar + '?size=16" />' + messages[i][1].username + " said at:<br />" + messages[i][1].text
-            });
+            if (messages[i][1].username != 'SERVER')
+                message_flags.push({
+                   x: (new Date(0)).setMilliseconds(messages[i][0]),
+                   title: title_symbol,
+                   text: '<img src="' + messages[i][1].gravatar + '?size=16" />' + messages[i][1].username + " said at:<br />" + messages[i][1].text
+                });
         }
         messages.sort(function(a, b) {
             a = a[0];
