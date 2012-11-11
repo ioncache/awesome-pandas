@@ -4,10 +4,10 @@ var http = require('http'),
     rest = require('restler'),
     qs = require('querystring'),
     gravatar = require('gravatar'),
+    async = require('async'),
     nano = require('nano')('http://nodejitsudb1638891429.iriscouch.com:5984');
 
 var handler = function(request, response) {
-    console.log(request.url);
     if (request.url === "/auth/login") {
         if (request.method === 'POST') {
             var data = '';
@@ -31,13 +31,6 @@ var handler = function(request, response) {
                 });
             });
         }
-//        rest.post('https://
-
-//        response.writeHead(200, {'Content-Type': 'application/json'});
-//        response.end(JSON.stringify({
-//            a: 'a', 
-//            b: 'b'
-//        }));
     } else if (request.url === "/auth/logout") {
         if (request.method === 'POST') {
             request.on('end', function() {
@@ -55,7 +48,6 @@ var app = http.createServer(handler),
 
 var dbs = {};
 var rooms = {};
-var cache = {};
 
 function newRoom(instrument) {
     var room = {
@@ -66,26 +58,28 @@ function newRoom(instrument) {
             chat: {}
         };
 
+    fetchChat(room);
+
     return room;
 }
 
-function fetchChat(instrument) {
-    var room = rooms[instrument];
+function fetchChat(room) {
 
     if (!dbs[room.db_name])
         dbs[room.db_name] = nano.use(room.db_name);
 
     dbs[room.db_name].list({descending: true}, function(err, data) {
-      if (!err)
-        for (var i = 0; i < data.total_rows; i++) {
-            dbs[room.db_name].get(data.rows[i].key, function(err, data) {
-                if (!data.username || !data.text || !data.gravatar) {
-                    console.log('bad data', data);
-                } else if ( data.username !== "SERVER" ) {
+        if (!err) {
+            for (var i = 0; i < data.total_rows; i++) {
+                dbs[room.db_name].get(data.rows[i].key, function(err, data) {
+                    if (!data.username || !data.text || !data.gravatar) {
+                        console.log(room.instrument, 'bad data', data);
+                    } else {
                     data.timestamp = data.timestamp - (2 * 24 * 60 * 60 * 1000);
-                    room.chat[data.timestamp] = data;
-                }
-            });
+                        room.chat[data.timestamp] = data;
+                    }
+                });
+            }
         }
     });
 }
@@ -148,7 +142,7 @@ io.sockets.on('connection', function(socket) {
             addUser(room, socket.username);
         }
 
-        socket.emit('snapshot', rooms[room]);
+//        socket.emit('snapshot', rooms[room]);
     });
 
     socket.on('removeuser', function(data) {
@@ -251,127 +245,77 @@ app.listen(8000);
 
 var host = 'http://fxgame-rates.oanda.com';
 var sessionId;
-var data = {
-    candles: [
-            {
-                instrument: "USD_CAD",
-                granularity: "S5",
-        //        start: 1352477550
-                start: 1352490000
-            },
-            {
-                instrument: "EUR_USD",
-                granularity: "S5",
-        //        start: 1352477550
-                start: 1352490000
-            }
-        ]
-    };
 
-var last;
-var keys;
-function setupCandles() {
-    keys = Object.keys(cache['EUR_USD'].candles['S5']);
+function parsePollResponse(data, response) {
+    if (data.candles) {
+        for (var i in data.candles) {
+            var next = data.candles[i];
 
-    if (!rooms['EUR_USD'])
-        rooms['EUR_USD'] = newRoom('EUR_USD');
-    if (!rooms['EUR_USD'].candles['S5'])
-        rooms['EUR_USD'].candles['S5'] = {};
+            var room = rooms[next.instrument];
+            var interval = room.candles[next.granularity];
 
-    for (last = 0; last < 200 && last < keys.length; last++) {
-        var index = keys[last];
-        var candle = cache['EUR_USD'].candles['S5'][index];
-        rooms['EUR_USD'].candles['S5'][index] = candle;
-    }
-
-    fetchChat('EUR_USD');
-
-    keys = Object.keys(cache['USD_CAD'].candles['S5']);
-
-    if (!rooms['USD_CAD'])
-        rooms['USD_CAD'] = newRoom('USD_CAD');
-    if (!rooms['USD_CAD'].candles['S5'])
-        rooms['USD_CAD'].candles['S5'] = {};
-
-    for (last = 0; last < 200 && last < keys.length; last++) {
-        var index = keys[last];
-        var candle = cache['USD_CAD'].candles['S5'][index];
-        rooms['USD_CAD'].candles['S5'][index] = candle;
-    }
-
-    fetchChat('USD_CAD');
-};
-
-function trickle() {
-console.log('trickle', last, keys.length);
-    if (last < keys.length) {
-        var index = keys[last++];
-
-        var index = keys[last];
-        var candle = cache['EUR_USD'].candles['S5'][index];
-        if (candle) {
-            rooms['EUR_USD'].candles['S5'][index] = candle;
-            io.sockets.in('EUR_USD').emit('candle', candle);
-        }
-
-        var index = keys[last];
-        var candle = cache['USD_CAD'].candles['S5'][index];
-
-        if (candle) {
-            rooms['USD_CAD'].candles['S5'][index] = candle;
-            io.sockets.in('USD_CAD').emit('candle', candle);
-        }
-
-        setTimeout(trickle, 5000);
-    }
-};
-
-var poll = function() {
-    rest.get(host + '/v1/instruments/poll?sessionId=' + sessionId)
-        .on('complete', function(data, response) {
-            var candles = data.candles;
-
-            if (candles) {
-                for (var i = 0, l1 = candles.length; i < l1; i++) {
-                    var next = candles[i];
-
-                    var instrument = next.instrument,
-                        interval = next.granularity;
-
-                    if (!cache[instrument])
-                        cache[instrument] = newRoom(instrument);
-                    if (!cache[instrument].candles[interval])
-                        cache[instrument].candles[interval] = {};
-                    for (var j = 0, l2 = next.candles.length; j < l2; j++) {
-                        var candle = next.candles[j];
-                        cache[instrument].candles[interval][candle.time] = candle;
-                    }
+            for (var j in next.candles) {
+                var candle = next.candles[j];
+                if (!interval[candle.time]) {
+                    io.sockets.in(next.instrument).emit('candle', candle);
+                    interval[candle.time] = candle;
                 }
             }
+        }
+    }
+}
 
-            setupCandles();
-            trickle();
-//            setTimeout(poll, 5000);
+function poll() {
+    rest.get(host + '/v1/instruments/poll?sessionId=' + sessionId)
+        .on('complete', function(data, response) {
+            parsePollResponse(data, response);
+            setTimeout(poll, 5000);
         });
-};
+}
 
-var now = Math.floor(new Date().getTime() / 1000);
-var then = now - (2 * 24 * 60 * 60); // 2 DAYS AGO
-then = Math.floor(then / 10) * 10; // round to nearest 10 seconds
+var instruments = ["USD_CAD", "EUR_USD"];
 
-//for (var i = 0; i < data.candles.length; i++) {
-//    data.candles[i].start = then;
-//}
-console.log(data);
+function fetchCandles(instrument, callback) {
+    rest.get(host + "/v1/instruments/" + instrument +
+            "/candles?gran=S5&count=500")
+        .on('complete', function(data, response) {
+            var room = rooms[data.instrument] = newRoom(data.instrument);
+            var interval = room.candles[data.granularity] = {};
+            var last = 0;
 
-//rest.getJson(host + "/v1/
+            for (var i in data.candles) {
+                var candle = data.candles[i];
+                interval[candle.time] = candle;
 
-rest.postJson(host + '/v1/instruments/poll', data)
-    .on('complete', function(data, response) {
-        console.log(response.rawEncoded);
-        console.log(data.sessionId);
+                if (candle.time > last)
+                    last = candle.time;
+            }
 
-        sessionId = data.sessionId;
+            callback(null, {instrument: instrument,
+                            time: last});
+        });
+}
 
-        poll();
-    });
+function setupPolling(timestamps) {
+    var request = { candles: [] };
+    for (var index in timestamps) {
+        var next = timestamps[index];
+        request.candles.push({
+                instrument: next.instrument,
+                granularity: 'S5',
+                start: next.time
+            });
+    }
+
+    rest.postJson(host + '/v1/instruments/poll', request)
+        .on('complete', function(data, response) {
+            sessionId = data.sessionId;
+            poll();
+        });
+}
+
+async.map(instruments, fetchCandles,
+    function(err, results) {
+        setupPolling(results);
+    }
+);
