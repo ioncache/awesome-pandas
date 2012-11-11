@@ -74,8 +74,8 @@ function fetchChat(room) {
                 dbs[room.db_name].get(data.rows[i].key, function(err, data) {
                     if (!data.username || !data.text || !data.gravatar) {
                         console.log(room.instrument, 'bad data', data);
-                    } else {
-                    data.timestamp = data.timestamp - (2 * 24 * 60 * 60 * 1000);
+                    } else if (data.username !== "SERVER") {
+                        data.timestamp = data.timestamp;
                         room.chat[data.timestamp] = data;
                     }
                 });
@@ -142,7 +142,7 @@ io.sockets.on('connection', function(socket) {
             addUser(room, socket.username);
         }
 
-//        socket.emit('snapshot', rooms[room]);
+        socket.emit('snapshot', rooms[room]);
     });
 
     socket.on('removeuser', function(data) {
@@ -262,6 +262,34 @@ function parsePollResponse(data, response) {
                 }
             }
         }
+    } else {
+        console.log('hack!!!!');
+        var now = Math.floor(new Date().getTime() / 1000);
+        now = (Math.floor(now / 5)) * 5;
+
+        var candle = {
+                time: now,
+                "open mid": 1.27029,
+                "close mid": 1.27029,
+                "high mid": 1.27039,
+                "low mid": 1.27019,
+                "complete": true
+            };
+
+        rooms['EUR_USD'].candles['S5'][now] = candle;
+        io.sockets.in('EUR_USD').emit('candle', candle);
+
+        var candle = {
+                time: now,
+                "open mid": 1.00029,
+                "close mid": 1.00029,
+                "high mid": 1.00039,
+                "low mid": 1.00019,
+                "complete": true
+            };
+
+        rooms['USD_CAD'].candles['S5'][now] = candle;
+        io.sockets.in('USD_CAD').emit('candle', candle);
     }
 }
 
