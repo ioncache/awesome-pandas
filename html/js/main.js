@@ -201,6 +201,16 @@ console.log('snapshot', data);
 
             rangeSelector: {
                 buttons: [{
+                    type: "second",
+                    count: 10,
+                    text: "10s"
+                },
+                {
+                    type: "minute",
+                    count: 1,
+                    text: "1m"
+                },
+                {
                     type: "minute",
                     count: 10,
                     text: "10m"
@@ -225,7 +235,7 @@ console.log('snapshot', data);
                     count: 1,
                     text: "All"
                 }],
-                selected: 1,
+                selected: 3,
                 inputEnabled: false
             },
 
@@ -314,8 +324,10 @@ function new_chat_message(data) {
 
     if ( data.prediction > 0 || data.prediction < 0 ) {
         var arrow_icon = "icon-arrow-" + (data.prediction > 0 ? "up" : "down");
+        var title_text = (data.prediction > 0 ? "Rising" : "Falling") + " trend prediction.";
         $("<i />")
             .addClass(arrow_icon)
+            .attr("title", title_text)
             .css({
                 position: "absolute",
                 top: "5px",
