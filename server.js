@@ -199,7 +199,7 @@ io.sockets.on('connection', function(socket) {
         socket.broadcast.to(room).emit('updatechat', update);
 
         // cache the chat
-        rooms[room].chat[now] = update;
+//        rooms[room].chat[now] = update;
         updateDatabase(room, update);
     }
 
@@ -221,7 +221,7 @@ io.sockets.on('connection', function(socket) {
         socket.broadcast.to(socket.room).emit('updatechat', update);
 
         // cache the chat
-        rooms[socket.room].chat[now] = update;
+//        rooms[socket.room].chat[now] = update;
         updateDatabase(socket.room, update);
     }
 
@@ -261,6 +261,8 @@ function parsePollResponse(data, response) {
                     interval[candle.time] = candle;
                 }
             }
+
+            trimCandles(next.instrument);
         }
     } else {
         console.log('hack!!!!');
@@ -279,6 +281,8 @@ function parsePollResponse(data, response) {
         rooms['EUR_USD'].candles['S5'][now] = candle;
         io.sockets.in('EUR_USD').emit('candle', candle);
 
+        trimCandles('EUR_USD');
+
         var candle = {
                 time: now,
                 "open mid": 1.00029,
@@ -290,6 +294,17 @@ function parsePollResponse(data, response) {
 
         rooms['USD_CAD'].candles['S5'][now] = candle;
         io.sockets.in('USD_CAD').emit('candle', candle);
+
+        trimCandles('USD_CAD');
+    }
+}
+
+function trimCandles(instrument) {
+    var candles = rooms[instrument].candles['S5'];
+    var keys = Object.keys(candles);
+    if (keys.length > 2000) {
+        keys.sort();
+        delete candles[keys[0]];
     }
 }
 
@@ -318,7 +333,20 @@ function fetchCandles(instrument, callback) {
                 if (candle.time > last)
                     last = candle.time;
             }
-
+/*
+            var now = Math.floor(new Date().getTime() / 1000);
+            for (var next = last + 5; next < now; next += 5) {
+console.log('adding', instrument, next);
+                interval[next] = {
+                        time: next,
+                        "open mid": interval[last]["open mid"],
+                        "close mid": interval[last]["close mid"],
+                        "high mid": interval[last]["high mid"],
+                        "low mid": interval[last]["low mid"],
+                        "complete": true
+                    };
+            }
+*/
             callback(null, {instrument: instrument,
                             time: last});
         });
